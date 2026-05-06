@@ -8,11 +8,11 @@ import java.time.LocalDateTime;
 public class ReservationResponse {
 
     private Integer id;
-    private String guestName;
-    private String guestPhone;
+    private String customerName;
+    private String customerPhone;
     private Integer partySize;
     private LocalDateTime reservedAt;
-    private String note;
+    private String notes;
     private String status;
     private LocalDateTime createdAt;
 }

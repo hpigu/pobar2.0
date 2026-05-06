@@ -23,6 +23,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -40,12 +41,15 @@ public class ReservationServiceImpl implements ReservationService {
     @Audit(action = "CREATE_RESERVATION", entityType = "Reservation")
     public ReservationResponse create(ReservationRequest request) {
         Reservation reservation = new Reservation();
-        reservation.setGuestName(request.getGuestName());
-        reservation.setGuestPhone(request.getGuestPhone());
+        reservation.setCustomerName(request.getCustomerName());
+        reservation.setCustomerPhone(request.getCustomerPhone());
         reservation.setPartySize(request.getPartySize());
         reservation.setReservedAt(request.getReservedAt());
-        reservation.setNote(request.getNote());
-        reservation.setStatus("PENDING");
+        reservation.setNotes(request.getNotes());
+        reservation.setSeatType("REGULAR");
+        reservation.setDurationMinutes(120);
+        reservation.setStatus("CONFIRMED");
+        reservation.setCancelToken(UUID.randomUUID().toString());
         reservationMapper.insert(reservation);
         return toResponse(reservation);
     }
@@ -63,11 +67,10 @@ public class ReservationServiceImpl implements ReservationService {
     @Audit(action = "UPDATE_RESERVATION_STATUS", entityType = "Reservation")
     public ReservationResponse updateStatus(Integer id, String status, Integer operatorId) {
         Reservation reservation = reservationMapper.selectById(id);
-        if (reservation == null) {
-            throw new BusinessException(404, "找不到此訂位");
-        }
+        if (reservation == null) throw new BusinessException(404, "找不到此訂位");
         reservation.setStatus(status);
         reservation.setHandledBy(operatorId);
+        if ("CANCELLED".equals(status)) reservation.setCancelledAt(LocalDateTime.now());
         reservationMapper.updateById(reservation);
         return toResponse(reservation);
     }
@@ -113,11 +116,11 @@ public class ReservationServiceImpl implements ReservationService {
     private ReservationResponse toResponse(Reservation r) {
         ReservationResponse resp = new ReservationResponse();
         resp.setId(r.getId());
-        resp.setGuestName(r.getGuestName());
-        resp.setGuestPhone(r.getGuestPhone());
+        resp.setCustomerName(r.getCustomerName());
+        resp.setCustomerPhone(r.getCustomerPhone());
         resp.setPartySize(r.getPartySize());
         resp.setReservedAt(r.getReservedAt());
-        resp.setNote(r.getNote());
+        resp.setNotes(r.getNotes());
         resp.setStatus(r.getStatus());
         resp.setCreatedAt(r.getCreatedAt());
         return resp;

@@ -223,7 +223,7 @@ onMounted(() => {
             style="width:100%" @change="loadReservations" />
         </div>
         <el-table :data="reservations" size="small">
-          <el-table-column prop="customerName" label="姓名" width="70" />
+          <el-table-column prop="customerName" label="姓名" width="80" />
           <el-table-column prop="partySize" label="人數" width="50" />
           <el-table-column label="時間" width="70">
             <template #default="{ row }">{{ row.reservedAt?.slice(11,16) }}</template>

@@ -11,17 +11,20 @@ public class Reservation {
 
     @TableId(type = IdType.AUTO)
     private Integer id;
-    private String guestName;
-    private String guestPhone;
+    private String customerName;
+    private String customerPhone;
+    private String seatType;            // REGULAR, BAR_COUNTER（預設 REGULAR）
     private Integer partySize;
-    private LocalDateTime reservedAt;    // 預約的時間（含日期）
-    private String note;
-    private String status;               // PENDING, CONFIRMED, SEATED, CANCELLED, NO_SHOW
-    private Integer handledBy;           // 處理該訂位的員工 id
+    private LocalDateTime reservedAt;
+    private Integer durationMinutes;    // 預設 120
+    private String status;              // CONFIRMED, SEATED, CANCELLED, NO_SHOW, COMPLETED
+    private String cancelToken;         // UUID，顧客線上取消用
+    private Integer assignedTableId;
+    private String notes;
+    @TableField(exist = false)
+    private Integer handledBy;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
+    private LocalDateTime cancelledAt;
 }

@@ -10,7 +10,7 @@ const selectedTime = ref(null)   // 'HH:mm'
 const slots = ref([])
 const loadingSlots = ref(false)
 
-const form = ref({ guestName: '', guestPhone: '', partySize: 2, note: '' })
+const form = ref({ customerName: '', customerPhone: '', partySize: 2, notes: '' })
 const submitting = ref(false)
 
 function disabledDate(d) {
@@ -58,16 +58,16 @@ const reservedAtIso = computed(() => {
 })
 
 async function submit() {
-  if (!form.value.guestName.trim()) { ElMessage.warning('請填寫姓名'); return }
-  if (!/^09\d{8}$/.test(form.value.guestPhone)) { ElMessage.warning('手機格式：09xxxxxxxx'); return }
+  if (!form.value.customerName.trim()) { ElMessage.warning('請填寫姓名'); return }
+  if (!/^09\d{8}$/.test(form.value.customerPhone)) { ElMessage.warning('手機格式：09xxxxxxxx'); return }
   submitting.value = true
   try {
     await api.post('/api/reservations', {
-      guestName:  form.value.guestName,
-      guestPhone: form.value.guestPhone,
-      partySize:  form.value.partySize,
-      note:       form.value.note,
-      reservedAt: reservedAtIso.value,
+      customerName:  form.value.customerName,
+      customerPhone: form.value.customerPhone,
+      partySize:     form.value.partySize,
+      notes:         form.value.notes,
+      reservedAt:    reservedAtIso.value,
     })
     step.value = 4
   } catch (e) {
@@ -82,7 +82,7 @@ function reset() {
   selectedDate.value = null
   selectedTime.value = null
   slots.value = []
-  form.value = { guestName: '', guestPhone: '', partySize: 2, note: '' }
+  form.value = { customerName: '', customerPhone: '', partySize: 2, notes: '' }
 }
 </script>
 
@@ -109,7 +109,7 @@ function reset() {
         <div style="font-size:20px; font-weight:700; margin:16px 0 8px">訂位成功！</div>
         <div style="color:#606266; line-height:2">
           {{ selectedDate }} {{ selectedTime }}<br>
-          {{ form.guestName }} · {{ form.partySize }} 位<br>
+          {{ form.customerName }} · {{ form.partySize }} 位<br>
           <span style="font-size:12px; color:#999">如需取消請提前來電，謝謝</span>
         </div>
         <el-button type="primary" style="margin-top:24px" @click="reset">再訂一筆</el-button>
@@ -159,16 +159,16 @@ function reset() {
         </div>
         <el-form label-width="80px">
           <el-form-item label="姓名">
-            <el-input v-model="form.guestName" placeholder="訂位人姓名" maxlength="50" />
+            <el-input v-model="form.customerName" placeholder="訂位人姓名" maxlength="50" />
           </el-form-item>
           <el-form-item label="手機">
-            <el-input v-model="form.guestPhone" placeholder="09xxxxxxxx" maxlength="10" />
+            <el-input v-model="form.customerPhone" placeholder="09xxxxxxxx" maxlength="10" />
           </el-form-item>
           <el-form-item label="用餐人數">
             <el-input-number v-model="form.partySize" :min="1" :max="50" style="width:100%" />
           </el-form-item>
           <el-form-item label="備註">
-            <el-input v-model="form.note" type="textarea" :rows="2"
+            <el-input v-model="form.notes" type="textarea" :rows="2"
               placeholder="過敏、特殊需求等（選填）" maxlength="200" show-word-limit />
           </el-form-item>
           <el-form-item>

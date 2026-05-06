@@ -10,11 +10,11 @@ public class ReservationRequest {
 
     @NotBlank
     @Size(max = 50)
-    private String guestName;
+    private String customerName;
 
     @NotBlank
     @Pattern(regexp = "^09\\d{8}$", message = "手機號碼格式不正確")
-    private String guestPhone;
+    private String customerPhone;
 
     @Min(1)
     @Max(50)
@@ -25,5 +25,5 @@ public class ReservationRequest {
     private LocalDateTime reservedAt;
 
     @Size(max = 200)
-    private String note;
+    private String notes;
 }
