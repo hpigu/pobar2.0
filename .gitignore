@@ -1,0 +1,22 @@
+﻿# ── Maven build output ──
+target/
+
+# ── Claude Code internal ──
+.claude/
+
+# ── IntelliJ ──
+.idea/
+*.iml
+
+# ── 上傳/備份/日誌（本地產生）──
+uploads/
+backups/
+logs/
+*.log
+
+# ── Spring local config ──
+application-local.properties
+
+# ── OS ──
+.DS_Store
+Thumbs.db
