@@ -54,6 +54,17 @@
         <logger name="com.pobar.mapper" level="DEBUG"/>
     </springProfile>
 
+    <!-- Docker 環境：console（讓 docker logs 能看到）+ file -->
+    <springProfile name="docker">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+        <logger name="com.pobar" level="INFO"/>
+        <logger name="com.pobar.mapper" level="WARN"/>
+    </springProfile>
+
     <!-- 生產環境：只寫 file，關掉 SQL 輸出 -->
     <springProfile name="prod">
         <root level="WARN">
