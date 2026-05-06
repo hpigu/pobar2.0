@@ -4,13 +4,12 @@ import com.pobar.common.Result;
 import com.pobar.dto.reservation.ReservationRequest;
 import com.pobar.dto.reservation.ReservationResponse;
 import com.pobar.dto.reservation.TimeSlotResponse;
-import com.pobar.entity.User;
 import com.pobar.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -51,7 +50,8 @@ public class ReservationController {
     public Result<ReservationResponse> updateStatus(
             @PathVariable Integer id,
             @RequestBody Map<String, String> body,
-            @AuthenticationPrincipal User operator) {
-        return Result.ok(reservationService.updateStatus(id, body.get("status"), operator.getId()));
+            Authentication auth) {
+        Integer operatorId = (Integer) auth.getPrincipal();
+        return Result.ok(reservationService.updateStatus(id, body.get("status"), operatorId));
     }
 }
