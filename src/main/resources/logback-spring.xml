@@ -43,7 +43,7 @@
     </appender>
 
     <!-- 開發環境：console + file，DEBUG level -->
-    <springProfile name="dev,default">
+    <springProfile name="dev,local,default">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
