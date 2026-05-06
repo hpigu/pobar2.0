@@ -185,38 +185,6 @@ public class MenuServiceImpl implements MenuService {
         return imageUrl;
     }
 
-    // ─── 食材 ───────────────────────────────────
-
-    @Override
-    public List<Ingredient> listIngredients() {
-        return ingredientMapper.selectList(null);
-    }
-
-    @Override
-    @Audit(action = "SAVE_INGREDIENT", entityType = "INGREDIENT")
-    public Ingredient saveIngredient(Ingredient ingredient) {
-        ingredient.setName(XssUtil.sanitize(ingredient.getName()));
-        if (ingredient.getId() == null) {
-            ingredient.setIsAvailable(1);
-            ingredientMapper.insert(ingredient);
-        } else {
-            ingredientMapper.updateById(ingredient);
-        }
-        return ingredient;
-    }
-
-    @Override
-    @Transactional
-    @Audit(action = "SET_INGREDIENT_AVAILABILITY", entityType = "INGREDIENT")
-    public void setIngredientAvailability(Integer id, boolean available) {
-        Ingredient ingredient = ingredientMapper.selectById(id);
-        if (ingredient == null) throw new BusinessException(404, "食材不存在");
-        ingredient.setIsAvailable(available ? 1 : 0);
-        ingredientMapper.updateById(ingredient);
-        // 連動下架/上架所有使用此食材的酒品
-        productMapper.updateAvailabilityByIngredient(id, available ? 1 : 0);
-    }
-
     // ─── 酒譜 ───────────────────────────────────
 
     @Override

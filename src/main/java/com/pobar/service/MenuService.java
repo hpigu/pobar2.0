@@ -26,11 +26,6 @@ public interface MenuService {
     void deleteProduct(Integer id);
     String saveImage(Integer productId, byte[] imageBytes, String originalFileName);
 
-    // 食材
-    List<Ingredient> listIngredients();
-    Ingredient saveIngredient(Ingredient ingredient);
-    void setIngredientAvailability(Integer id, boolean available);
-
     // 酒譜
     Recipe getRecipe(Integer productId);
     Recipe saveRecipe(Integer productId, RecipeSaveRequest request);

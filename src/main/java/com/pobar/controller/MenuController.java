@@ -108,26 +108,4 @@ public class MenuController {
         return Result.ok(menuService.saveRecipe(productId, request));
     }
 
-    // ─── 食材 ─────────────────────────────────────────
-
-    @GetMapping("/ingredients")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<List<Ingredient>> listIngredients() {
-        return Result.ok(menuService.listIngredients());
-    }
-
-    @PostMapping("/ingredients")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<Ingredient> saveIngredient(@RequestBody Ingredient ingredient) {
-        return Result.ok(menuService.saveIngredient(ingredient));
-    }
-
-    @PutMapping("/ingredients/{id}/availability")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<?> setIngredientAvailability(@PathVariable Integer id,
-                                                @RequestParam boolean available) {
-        menuService.setIngredientAvailability(id, available);
-        return Result.ok();
-    }
-
 }
