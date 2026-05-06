@@ -5,9 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const tables = ref([])
 const dialog = ref(false)
-const form = ref({ id: null, name: '', capacity: 4 })
-const qrDialog = ref(false)
-const qrTable = ref(null)
+const form = ref({ id: null, name: '', type: 'REGULAR', capacity: 4 })
 
 // ── 拖曳 ────────────────────────────────────
 const FLOOR_W = 800
@@ -71,12 +69,13 @@ async function load() {
 
 function openDialog(row = null) {
   form.value = row
-    ? { id: row.id, name: row.name, capacity: row.capacity }
-    : { id: null, name: '', capacity: 4 }
+    ? { id: row.id, name: row.name, type: row.type || 'REGULAR', capacity: row.capacity }
+    : { id: null, name: '', type: 'REGULAR', capacity: 4 }
   dialog.value = true
 }
 
 async function save() {
+  if (!form.value.name?.trim()) { ElMessage.warning('請輸入桌位名稱'); return }
   try {
     const pos = form.value.id ? positions.value[form.value.id] : { x: 20, y: 20 }
     const payload = { ...form.value, posX: Math.round(pos?.x ?? 20), posY: Math.round(pos?.y ?? 20) }
@@ -98,15 +97,6 @@ async function remove(table) {
     ElMessage.success('已刪除')
     load()
   } catch { ElMessage.error('刪除失敗') }
-}
-
-function showQr(table) {
-  qrTable.value = table
-  qrDialog.value = true
-}
-
-function qrUrl(table) {
-  return `${window.location.origin}/order/${table.qrToken}`
 }
 
 onMounted(() => {
@@ -162,7 +152,6 @@ onUnmounted(() => {
           <div style="font-size:11px; color:#909399">{{ table.capacity }}人</div>
           <div style="display:flex; gap:4px; margin-top:2px" @mousedown.stop>
             <el-button link size="small" style="font-size:11px; padding:0" @click="openDialog(table)">編輯</el-button>
-            <el-button link size="small" style="font-size:11px; padding:0; color:#67c23a" @click="showQr(table)">QR</el-button>
             <el-button link size="small" style="font-size:11px; padding:0; color:#f56c6c"
               :disabled="table.status === 'OPEN'" @click="remove(table)">刪</el-button>
           </div>
@@ -180,6 +169,12 @@ onUnmounted(() => {
         <el-form-item label="桌位名稱">
           <el-input v-model="form.name" placeholder="例：A1、吧台1、包廂" />
         </el-form-item>
+        <el-form-item label="桌位類型">
+          <el-select v-model="form.type" style="width:100%">
+            <el-option label="一般桌" value="REGULAR" />
+            <el-option label="吧台" value="BAR_COUNTER" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="容納人數">
           <el-input-number v-model="form.capacity" :min="1" :max="30" />
         </el-form-item>
@@ -187,21 +182,6 @@ onUnmounted(() => {
       <template #footer>
         <el-button @click="dialog = false">取消</el-button>
         <el-button type="primary" @click="save">儲存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- QR Code Dialog -->
-    <el-dialog v-model="qrDialog" :title="`${qrTable?.name} — 掃碼點餐`" width="300px">
-      <div v-if="qrTable" style="text-align:center; padding:8px">
-        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrUrl(qrTable))}`"
-          style="width:220px; height:220px" alt="QR Code" />
-        <div style="margin-top:10px; font-size:12px; color:#999; word-break:break-all">
-          {{ qrUrl(qrTable) }}
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="qrDialog = false">關閉</el-button>
-        <el-button type="primary" @click="() => window.print()">列印</el-button>
       </template>
     </el-dialog>
   </div>

@@ -1,5 +1,6 @@
 package com.pobar.service;
 
+import com.pobar.dto.table.BarTableVO;
 import com.pobar.dto.table.OpenSessionRequest;
 import com.pobar.entity.BarTable;
 import com.pobar.entity.TableSession;
@@ -8,7 +9,7 @@ import java.util.List;
 
 public interface TableService {
 
-    List<BarTable> listTables();
+    List<BarTableVO> listTables();
     BarTable saveTable(BarTable table);
     void deleteTable(Integer id);
 

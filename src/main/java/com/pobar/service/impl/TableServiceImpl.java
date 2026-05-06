@@ -1,6 +1,7 @@
 package com.pobar.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.pobar.dto.table.BarTableVO;
 import com.pobar.dto.table.OpenSessionRequest;
 import com.pobar.entity.BarTable;
 import com.pobar.entity.TableSession;
@@ -29,10 +30,8 @@ public class TableServiceImpl implements TableService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
-    public List<BarTable> listTables() {
-        return barTableMapper.selectList(
-            new LambdaQueryWrapper<BarTable>().eq(BarTable::getIsActive, 1)
-        );
+    public List<BarTableVO> listTables() {
+        return barTableMapper.listWithStatus();
     }
 
     @Override
@@ -127,7 +126,7 @@ public class TableServiceImpl implements TableService {
     }
 
     private void broadcastTableStatus() {
-        List<BarTable> tables = listTables();
+        List<BarTableVO> tables = listTables();
         messagingTemplate.convertAndSend("/topic/tables", tables);
     }
 }

@@ -1,6 +1,7 @@
 package com.pobar.controller;
 
 import com.pobar.common.Result;
+import com.pobar.dto.table.BarTableVO;
 import com.pobar.dto.table.OpenSessionRequest;
 import com.pobar.entity.BarTable;
 import com.pobar.entity.TableSession;
@@ -22,25 +23,25 @@ public class TableController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('WAITER','MANAGER','ADMIN')")
-    public Result<List<BarTable>> listTables() {
+    public Result<List<BarTableVO>> listTables() {
         return Result.ok(tableService.listTables());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<BarTable> saveTable(@RequestBody BarTable table) {
         return Result.ok(tableService.saveTable(table));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<BarTable> updateTable(@PathVariable Integer id, @RequestBody BarTable table) {
         table.setId(id);
         return Result.ok(tableService.saveTable(table));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<?> deleteTable(@PathVariable Integer id) {
         tableService.deleteTable(id);
         return Result.ok();

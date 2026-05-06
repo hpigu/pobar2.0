@@ -63,8 +63,8 @@ function clickTable(table) {
 async function confirmOpen() {
   try {
     const res = await api.post('/api/tables/sessions', {
-      tableId: selectedTable.value.id,
-      guestCount: openForm.value.guestCount
+      tableIds: [selectedTable.value.id],
+      partySize: openForm.value.guestCount
     })
     const session = res.data.data
     openDialog.value = false
@@ -73,8 +73,8 @@ async function confirmOpen() {
     // 重新選取更新後的桌位
     const updated = tables.value.find(t => t.id === selectedTable.value.id)
     if (updated) selectTable(updated)
-    // 顯示 QR Code
-    qrUrl.value = `${window.location.origin}/order/${session.sessionToken}`
+    // 顯示 QR Code（token 來自 openSession 回傳的 TableSession.qrToken）
+    qrUrl.value = `${window.location.origin}/order/${session.qrToken}`
     qrDialog.value = true
   } catch { ElMessage.error('開桌失敗') }
 }
@@ -92,10 +92,10 @@ async function closeTable() {
   } catch { ElMessage.error('關桌失敗') }
 }
 
-// 顯示 QR Code
+// 顯示 QR Code（sessionQrToken 來自 BarTableVO JOIN 查詢）
 function showQr() {
   if (!selectedTable.value) return
-  qrUrl.value = `${window.location.origin}/order/${selectedTable.value.sessionToken}`
+  qrUrl.value = `${window.location.origin}/order/${selectedTable.value.sessionQrToken}`
   qrDialog.value = true
 }
 
