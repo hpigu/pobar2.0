@@ -353,12 +353,4 @@ INSERT INTO `system_setting` (`setting_key`, `setting_value`, `description`) VAL
 ('max_items_per_order',         '20',    '每次送單最多品項數量')
 ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 
--- ─────────────────────────────────────────
--- 預設管理員帳號（密碼請於首次登入後更改）
--- password: admin1234 (SHA-256 + salt，實際由程式產生)
--- ─────────────────────────────────────────
-INSERT INTO `user` (`account`, `password`, `role`, `is_active`) VALUES
-('admin', 'CHANGE_ME_RUN_InitAdminRunner', 'ADMIN', 1)
-ON DUPLICATE KEY UPDATE `id` = `id`;
-
 SET FOREIGN_KEY_CHECKS = 1;
