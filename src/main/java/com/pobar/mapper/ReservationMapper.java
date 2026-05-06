@@ -13,11 +13,11 @@ import java.util.List;
 @Mapper
 public interface ReservationMapper extends BaseMapper<Reservation> {
 
-    // 自動取消：找出超過指定時間仍 PENDING/CONFIRMED 的訂位
+    // 自動取消：超過寬限時間仍未到場的訂位標為 AUTO_CANCELLED
     @Update("""
             UPDATE reservation
-            SET status = 'NO_SHOW'
-            WHERE status IN ('PENDING','CONFIRMED')
+            SET status = 'AUTO_CANCELLED', cancelled_at = NOW()
+            WHERE status = 'CONFIRMED'
               AND reserved_at < #{cutoff}
             """)
     int markNoShow(@Param("cutoff") LocalDateTime cutoff);

@@ -3,7 +3,6 @@ package com.pobar.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -14,13 +13,8 @@ public class Ingredient {
     private Integer id;
     private String name;
     private String unit;
-    private BigDecimal quantity;
-    private BigDecimal lowStockThreshold;
-    private Integer isAvailable;
+    private Integer isAvailable;     // 0/1 缺貨開關，連動下架相關酒品
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
 }

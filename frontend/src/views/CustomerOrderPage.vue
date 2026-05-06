@@ -46,7 +46,7 @@ onMounted(async () => {
     const [menuRes, attrRes, cartRes] = await Promise.all([
       api.get('/api/menu'),
       api.get('/api/attributes'),
-      api.get('/api/cart'),
+      api.get(`/api/cart/${token}`),
     ])
     products.value = menuRes.data.data || []
     // 取得唯一 categories
@@ -72,12 +72,10 @@ function openProductDialog(product) {
 }
 
 async function addToCart() {
-  const optionIds = Object.values(selectedOptions.value).flat()
   try {
     await cart.addItem({
       productId: selectedProduct.value.id,
       quantity: quantity.value,
-      attributeOptionIds: optionIds,
       notes: note.value,
     })
     dialogVisible.value = false
@@ -87,9 +85,9 @@ async function addToCart() {
   }
 }
 
-async function removeFromCart(productId) {
+async function removeFromCart(itemKey) {
   try {
-    await cart.removeItem(productId)
+    await cart.removeItem(itemKey)
   } catch (e) {
     ElMessage.error('移除失敗')
   }
@@ -99,8 +97,14 @@ async function submitOrder() {
   if (cart.items.length === 0) return
   try {
     await ElMessageBox.confirm('確認送出訂單？', '送出訂單', { type: 'info' })
-    await api.post('/api/orders', { sessionToken: token })
-    cart.clear()
+    const items = cart.items.map(i => ({
+      productId: i.productId,
+      quantity: i.quantity,
+      notes: i.notes,
+    }))
+    await api.post(`/api/orders?token=${token}`, { items })
+    // 後端送單後不會自動清購物車，前端主動清
+    await cart.fetchCart()
     cartDrawer.value = false
     ElMessage.success('訂單已送出！')
   } catch (e) {
@@ -190,14 +194,14 @@ async function submitOrder() {
       </div>
       <div v-else>
         <el-table :data="cart.items" style="width:100%">
-          <el-table-column prop="name" label="品項" />
+          <el-table-column prop="productName" label="品項" />
           <el-table-column prop="quantity" label="數量" width="70" />
           <el-table-column label="小計" width="90">
             <template #default="{ row }">NT$ {{ row.price * row.quantity }}</template>
           </el-table-column>
           <el-table-column width="60">
             <template #default="{ row }">
-              <el-button link type="danger" icon="Delete" @click="removeFromCart(row.productId)" />
+              <el-button link type="danger" icon="Delete" @click="removeFromCart(row.key)" />
             </template>
           </el-table-column>
         </el-table>

@@ -268,8 +268,8 @@ onMounted(() => {
           </el-table-column>
           <el-table-column label="狀態" width="80">
             <template #default="{ row }">
-              <el-tag size="small" :type="{ CONFIRMED:'success', SEATED:'warning', CANCELLED:'danger', NO_SHOW:'danger' }[row.status] || 'info'">
-                {{ { CONFIRMED:'已確認', SEATED:'已入座', CANCELLED:'取消', NO_SHOW:'未到場' }[row.status] || row.status }}
+              <el-tag size="small" :type="{ CONFIRMED:'success', SEATED:'warning', CANCELLED:'danger', AUTO_CANCELLED:'info', NO_SHOW:'danger', COMPLETED:'info' }[row.status] || 'info'">
+                {{ { CONFIRMED:'已確認', SEATED:'已入座', CANCELLED:'已取消', AUTO_CANCELLED:'逾時取消', NO_SHOW:'未到場', COMPLETED:'已完成' }[row.status] || row.status }}
               </el-tag>
             </template>
           </el-table-column>

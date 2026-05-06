@@ -8,7 +8,7 @@ export const useCartStore = defineStore('cart', () => {
 
   const totalCount = computed(() => items.value.reduce((s, i) => s + i.quantity, 0))
   const subtotal = computed(() =>
-    items.value.reduce((s, i) => s + i.price * i.quantity, 0)
+    items.value.reduce((s, i) => s + Number(i.price ?? 0) * i.quantity, 0)
   )
 
   function setSession(token) {
@@ -17,19 +17,19 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   function syncFromWs(serverItems) {
-    items.value = serverItems
+    items.value = serverItems || []
   }
 
   async function addItem(item) {
-    await api.post('/api/cart/item', item)
+    await api.post(`/api/cart/${sessionToken.value}/items`, item)
   }
 
-  async function removeItem(productId) {
-    await api.delete(`/api/cart/item/${productId}`)
+  async function removeItem(itemKey) {
+    await api.delete(`/api/cart/${sessionToken.value}/items/${itemKey}`)
   }
 
   async function fetchCart() {
-    const res = await api.get('/api/cart')
+    const res = await api.get(`/api/cart/${sessionToken.value}`)
     items.value = res.data.data || []
   }
 

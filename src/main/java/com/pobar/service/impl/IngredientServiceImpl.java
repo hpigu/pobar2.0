@@ -70,9 +70,11 @@ public class IngredientServiceImpl implements IngredientService {
     private Ingredient fromRequest(IngredientRequest req, Ingredient target) {
         target.setName(req.getName());
         target.setUnit(req.getUnit());
-        target.setQuantity(req.getQuantity());
-        target.setLowStockThreshold(req.getLowStockThreshold());
-        if (req.getIsAvailable() != null) target.setIsAvailable(req.getIsAvailable() ? 1 : 0);
+        if (req.getIsAvailable() != null) {
+            target.setIsAvailable(req.getIsAvailable() ? 1 : 0);
+        } else if (target.getIsAvailable() == null) {
+            target.setIsAvailable(1);
+        }
         return target;
     }
 
@@ -81,15 +83,8 @@ public class IngredientServiceImpl implements IngredientService {
         r.setId(i.getId());
         r.setName(i.getName());
         r.setUnit(i.getUnit());
-        r.setQuantity(i.getQuantity());
-        r.setLowStockThreshold(i.getLowStockThreshold());
         r.setIsAvailable(i.getIsAvailable() != null && i.getIsAvailable() == 1);
-        r.setUpdatedAt(i.getUpdatedAt());
-        if (i.getQuantity() != null && i.getLowStockThreshold() != null) {
-            r.setIsLow(i.getQuantity().compareTo(i.getLowStockThreshold()) <= 0);
-        } else {
-            r.setIsLow(false);
-        }
+        r.setCreatedAt(i.getCreatedAt());
         return r;
     }
 }

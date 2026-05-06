@@ -80,7 +80,7 @@ public class ReservationServiceImpl implements ReservationService {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(NO_SHOW_GRACE_MINUTES);
         int count = reservationMapper.markNoShow(cutoff);
         if (count > 0) {
-            log.info("自動標記 {} 筆訂位為 NO_SHOW（寬限 {} 分鐘）", count, NO_SHOW_GRACE_MINUTES);
+            log.info("自動取消 {} 筆逾時訂位（寬限 {} 分鐘）", count, NO_SHOW_GRACE_MINUTES);
         }
     }
 
