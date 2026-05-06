@@ -10,12 +10,19 @@ const routes = [
   {
     path: '/admin',
     component: () => import('@/views/admin/AdminLayout.vue'),
-    meta: { roles: ['ADMIN'] },
-    redirect: '/admin/reports',
+    meta: { roles: ['ADMIN', 'MANAGER'] },
+    redirect: to => {
+      const auth = useAuthStore()
+      return auth.role === 'ADMIN' ? '/admin/reports' : '/admin/menu'
+    },
     children: [
-      { path: 'reports', component: () => import('@/views/admin/ReportsPage.vue') },
-      { path: 'settings', component: () => import('@/views/admin/SettingsPage.vue') },
-      { path: 'users', component: () => import('@/views/admin/UsersPage.vue') },
+      { path: 'reports',     component: () => import('@/views/admin/ReportsPage.vue'),     meta: { roles: ['ADMIN'] } },
+      { path: 'menu',        component: () => import('@/views/admin/MenuPage.vue'),         meta: { roles: ['ADMIN', 'MANAGER'] } },
+      { path: 'tables',      component: () => import('@/views/admin/TablesPage.vue'),       meta: { roles: ['ADMIN', 'MANAGER'] } },
+      { path: 'ingredients', component: () => import('@/views/admin/IngredientsPage.vue'), meta: { roles: ['ADMIN', 'MANAGER'] } },
+      { path: 'attributes',  component: () => import('@/views/admin/AttributesPage.vue'),  meta: { roles: ['ADMIN'] } },
+      { path: 'settings',    component: () => import('@/views/admin/SettingsPage.vue'),    meta: { roles: ['ADMIN'] } },
+      { path: 'users',       component: () => import('@/views/admin/UsersPage.vue'),       meta: { roles: ['ADMIN'] } },
     ],
   },
   { path: '/', redirect: '/login' },
