@@ -30,4 +30,13 @@ public interface ReservationMapper extends BaseMapper<Reservation> {
             """)
     List<Reservation> selectByDateRange(@Param("from") LocalDateTime from,
                                         @Param("to") LocalDateTime to);
+
+    // 列出某日非取消訂位（時段可用性計算用）
+    @Select("""
+            SELECT * FROM reservation
+            WHERE reserved_at BETWEEN #{from} AND #{to}
+              AND status != 'CANCELLED'
+            """)
+    List<Reservation> selectActiveByDateRange(@Param("from") LocalDateTime from,
+                                              @Param("to") LocalDateTime to);
 }

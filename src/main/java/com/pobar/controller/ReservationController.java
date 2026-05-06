@@ -3,6 +3,7 @@ package com.pobar.controller;
 import com.pobar.common.Result;
 import com.pobar.dto.reservation.ReservationRequest;
 import com.pobar.dto.reservation.ReservationResponse;
+import com.pobar.dto.reservation.TimeSlotResponse;
 import com.pobar.entity.User;
 import com.pobar.service.ReservationService;
 import jakarta.validation.Valid;
@@ -22,6 +23,13 @@ import java.util.Map;
 public class ReservationController {
 
     private final ReservationService reservationService;
+
+    // 顧客查詢可用時段（public）
+    @GetMapping("/slots")
+    public Result<List<TimeSlotResponse>> getSlots(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return Result.ok(reservationService.getSlots(date));
+    }
 
     // 顧客自行預約（public）
     @PostMapping

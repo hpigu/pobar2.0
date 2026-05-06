@@ -55,7 +55,7 @@ function clickTable(table) {
     selectTable(table)
   } else {
     selectedTable.value = table
-    openForm.value = { guestCount: 2 }
+    openForm.value = { guestCount: Math.min(2, table.capacity) }
     openDialog.value = true
   }
 }
