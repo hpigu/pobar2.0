@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/orders/session/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/reservations").permitAll()
+                .requestMatchers(HttpMethod.GET,  "/api/reservations/slots").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/cancel").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/availability").permitAll()
                 // 認證端點
