@@ -45,6 +45,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/slots").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/cancel").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/availability").permitAll()
+                // 顧客購物車（無需登入）
+                .requestMatchers(HttpMethod.GET,    "/api/cart/**").permitAll()
+                .requestMatchers(HttpMethod.POST,   "/api/cart/**").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/cart/**").permitAll()
                 // 認證端點
                 .requestMatchers("/api/auth/login").permitAll()
                 // WebSocket
