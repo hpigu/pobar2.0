@@ -16,7 +16,7 @@ public interface ReservationMapper extends BaseMapper<Reservation> {
     // 自動取消：找出超過指定時間仍 PENDING/CONFIRMED 的訂位
     @Update("""
             UPDATE reservation
-            SET status = 'NO_SHOW', updated_at = NOW()
+            SET status = 'NO_SHOW'
             WHERE status IN ('PENDING','CONFIRMED')
               AND reserved_at < #{cutoff}
             """)
