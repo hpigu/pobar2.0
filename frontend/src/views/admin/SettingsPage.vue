@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { ElMessage } from 'element-plus'
 
-const settings = ref({})   // { key: value }
+const settings = ref({})        // { key: value }，service_charge_rate 以整數 % 儲存在此
 const saving = ref(false)
 
 // 設定分組與顯示定義
@@ -28,7 +28,7 @@ const groups = [
   {
     title: '結帳設定',
     items: [
-      { key: 'service_charge_rate', label: '服務費率', hint: '小數表示，例如 0.10 = 10%' },
+      { key: 'service_charge_rate', label: '服務費', hint: '', type: 'percent' },
     ],
   },
   {
@@ -43,13 +43,24 @@ const groups = [
 onMounted(async () => {
   const res = await api.get('/api/settings')
   const list = res.data.data || []
-  list.forEach(s => { settings.value[s.settingKey] = s.settingValue })
+  list.forEach(s => {
+    if (s.settingKey === 'service_charge_rate') {
+      settings.value[s.settingKey] = String(Math.round(parseFloat(s.settingValue) * 100))
+    } else {
+      settings.value[s.settingKey] = s.settingValue
+    }
+  })
 })
 
 async function save() {
   saving.value = true
+  const payload = { ...settings.value }
+  // 百分比整數轉回小數再送後端
+  if (payload.service_charge_rate !== undefined) {
+    payload.service_charge_rate = String(parseInt(payload.service_charge_rate) / 100)
+  }
   try {
-    await api.put('/api/settings', { ...settings.value })
+    await api.put('/api/settings', payload)
     ElMessage.success('設定已儲存')
   } catch { ElMessage.error('儲存失敗') }
   finally { saving.value = false }
@@ -75,6 +86,15 @@ async function save() {
                 :model-value="settings[item.key] === 'true'"
                 @update:model-value="v => settings[item.key] = String(v)"
               />
+            </template>
+            <template v-else-if="item.type === 'percent'">
+              <el-input-number
+                :model-value="parseInt(settings[item.key]) || 0"
+                @update:model-value="v => settings[item.key] = String(v)"
+                :min="0" :max="100" :step="1"
+                style="width:120px"
+              />
+              <span style="margin-left:6px; font-weight:600">%</span>
             </template>
             <template v-else>
               <el-input v-model="settings[item.key]" style="max-width:200px" />
