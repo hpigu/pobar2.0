@@ -30,6 +30,44 @@ const checkoutForm = ref({ paymentMethod: 'CASH', splitCount: 1, carrierType: nu
 const reservations = ref([])
 const reservationDate = ref(new Date().toISOString().split('T')[0])
 
+// 入座選桌
+const seatDialog = ref(false)
+const seatReservation = ref(null)
+const seatTableId = ref(null)
+const seating = ref(false)
+
+function availableTables() {
+  return tables.value.filter(t => t.status !== 'OPEN')
+}
+
+function openSeatDialog(row) {
+  seatReservation.value = row
+  seatTableId.value = null
+  seatDialog.value = true
+}
+
+async function confirmSeat() {
+  if (!seatTableId.value) { ElMessage.warning('請選擇桌位'); return }
+  seating.value = true
+  try {
+    const session = await api.post('/api/tables/sessions', {
+      tableIds: [seatTableId.value],
+      partySize: seatReservation.value.partySize,
+    })
+    qrUrl.value = `${window.location.origin}/order/${session.data.data.qrToken}`
+    await api.patch(`/api/reservations/${seatReservation.value.id}/status`, { status: 'SEATED' })
+    ElMessage.success('入座成功')
+    seatDialog.value = false
+    await loadTables()
+    await loadReservations()
+    qrDialog.value = true
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '入座失敗')
+  } finally {
+    seating.value = false
+  }
+}
+
 async function loadTables() {
   const res = await api.get('/api/tables')
   tables.value = res.data.data || []
@@ -238,7 +276,7 @@ onMounted(() => {
           <el-table-column label="操作" width="110">
             <template #default="{ row }">
               <el-button v-if="row.status === 'CONFIRMED'" link type="primary" size="small"
-                @click="updateReservation(row.id, 'SEATED')">入座</el-button>
+                @click="openSeatDialog(row)">入座</el-button>
               <el-button v-if="['CONFIRMED','SEATED'].includes(row.status)" link type="danger" size="small"
                 @click="updateReservation(row.id, 'CANCELLED')">取消</el-button>
             </template>
@@ -246,6 +284,31 @@ onMounted(() => {
         </el-table>
       </el-col>
     </el-row>
+
+    <!-- 入座選桌 Dialog -->
+    <el-dialog v-model="seatDialog"
+      :title="`入座 — ${seatReservation?.customerName}（${seatReservation?.partySize} 位）`"
+      width="360px">
+      <div v-if="availableTables().length === 0" style="color:#909399; text-align:center; padding:16px">
+        目前沒有空桌
+      </div>
+      <el-radio-group v-else v-model="seatTableId" style="display:flex; flex-direction:column; gap:10px">
+        <el-radio v-for="t in availableTables()" :key="t.id" :label="t.id"
+          :disabled="t.capacity < seatReservation?.partySize"
+          style="margin:0">
+          <span style="font-weight:600">{{ t.name }}</span>
+          <span style="color:#909399; font-size:12px; margin-left:6px">最多 {{ t.capacity }} 人</span>
+          <el-tag v-if="t.capacity < seatReservation?.partySize" type="danger" size="small"
+            style="margin-left:6px">容量不足</el-tag>
+        </el-radio>
+      </el-radio-group>
+      <template #footer>
+        <el-button @click="seatDialog = false">取消</el-button>
+        <el-button type="primary" :loading="seating"
+          :disabled="!seatTableId || availableTables().length === 0"
+          @click="confirmSeat">確認入座並開桌</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 開桌 Dialog -->
     <el-dialog v-model="openDialog" :title="`開桌 — ${selectedTable?.name}`" width="320px">
