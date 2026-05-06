@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   { path: '/login', component: () => import('@/views/LoginPage.vue'), meta: { public: true } },
   { path: '/order/:token', component: () => import('@/views/CustomerOrderPage.vue'), meta: { public: true } },
+  { path: '/reservation', component: () => import('@/views/ReservationPage.vue'), meta: { public: true } },
   { path: '/kitchen', component: () => import('@/views/KitchenDisplayPage.vue'), meta: { roles: ['KITCHEN', 'MANAGER', 'ADMIN'] } },
   { path: '/bar', component: () => import('@/views/BarDisplayPage.vue'), meta: { roles: ['BARTENDER', 'MANAGER', 'ADMIN'] } },
   { path: '/staff', component: () => import('@/views/StaffPage.vue'), meta: { roles: ['WAITER', 'MANAGER', 'ADMIN'] } },

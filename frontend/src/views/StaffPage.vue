@@ -153,18 +153,40 @@ onMounted(() => {
     </div>
 
     <el-row :gutter="20">
-      <!-- 左側：桌位 -->
+      <!-- 左側：桌位平面圖 -->
       <el-col :span="14">
-        <h3>桌位狀態</h3>
-        <div class="table-grid">
+        <h3 style="margin-bottom:8px">桌位狀態</h3>
+        <div style="font-size:12px; color:#999; margin-bottom:8px">
+          綠色框 = 使用中　｜　灰色框 = 空桌　｜　點擊桌位操作
+        </div>
+        <div id="staff-floor"
+          style="width:700px; height:440px; position:relative; background:#f8f9fa;
+                 border:2px dashed #dee2e6; border-radius:8px; overflow:hidden; user-select:none">
+          <svg width="700" height="440" style="position:absolute; inset:0; pointer-events:none">
+            <defs>
+              <pattern id="sgrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e9ecef" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#sgrid)" />
+          </svg>
           <div v-for="t in tables" :key="t.id"
-            class="table-card"
-            :class="{ open: t.status === 'OPEN', selected: selectedTable?.id === t.id }"
+            :style="`position:absolute; left:${t.posX ?? 0}px; top:${t.posY ?? 0}px;
+                     width:90px; height:60px; cursor:pointer`"
             @click="clickTable(t)">
-            <div class="table-name">{{ t.name }}</div>
-            <el-tag :color="statusColor(t.status)" size="small" effect="plain">
-              {{ t.status === 'OPEN' ? '使用中' : '空桌' }}
-            </el-tag>
+            <el-card shadow="hover"
+              :style="`height:100%; border:2px solid ${t.status === 'OPEN' ? '#67c23a' : (selectedTable?.id === t.id ? '#409eff' : '#dcdfe6')};
+                       background:${t.status === 'OPEN' ? '#f0f9eb' : (selectedTable?.id === t.id ? '#ecf5ff' : '#fff')}`"
+              :body-style="{ padding: '6px', height: '100%', boxSizing: 'border-box' }">
+              <div style="font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+                {{ t.name }}
+              </div>
+              <div style="font-size:11px; color:#909399">{{ t.capacity }}人</div>
+              <div style="font-size:10px; margin-top:2px"
+                :style="{ color: t.status === 'OPEN' ? '#67c23a' : '#c0c4cc' }">
+                {{ t.status === 'OPEN' ? '使用中' : '空桌' }}
+              </div>
+            </el-card>
           </div>
         </div>
 
@@ -297,13 +319,4 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
-.table-card {
-  padding: 16px 8px; text-align: center; border-radius: 8px;
-  border: 2px solid #eee; cursor: pointer; transition: all .2s;
-}
-.table-card.open { border-color: #67c23a; background: #f0f9eb; }
-.table-card.selected { border-color: #409eff; background: #ecf5ff; }
-.table-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
-.table-name { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
 </style>
