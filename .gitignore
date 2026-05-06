@@ -1,22 +1,40 @@
-﻿# ── Maven build output ──
+# ── Maven ──────────────────────────────
 target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# ── Claude Code internal ──
-.claude/
-
-# ── IntelliJ ──
+# ── IDE ────────────────────────────────
 .idea/
 *.iml
+.eclipse/
+.settings/
+.project
+.classpath
 
-# ── 上傳/備份/日誌（本地產生）──
+# ── Spring Boot ────────────────────────
+application-local.properties
+application-local.yml
+
+# ── 上傳圖片（本地產生，不入版控）───────
 uploads/
+
+# ── 備份檔 ─────────────────────────────
 backups/
+
+# ── 日誌 ───────────────────────────────
 logs/
 *.log
 
-# ── Spring local config ──
-application-local.properties
+# ── 前端 ───────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
 
-# ── OS ──
+# ── OS ─────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# ── Claude Code worktrees（工具內部用）──
+.claude/worktrees/
