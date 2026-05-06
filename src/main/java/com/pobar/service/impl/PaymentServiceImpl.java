@@ -133,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
         List<Integer> productIds = items.stream().map(OrderItem::getProductId).distinct().toList();
         Map<Integer, String> nameMap = productIds.isEmpty() ? Map.of() :
                 productMapper.selectBatchIds(productIds).stream()
-                        .collect(Collectors.toMap(Product::getId, Product::getName));
+                        .collect(Collectors.toMap(Product::getId, Product::getNameZh));
 
         BigDecimal subtotal = BigDecimal.ZERO;
         List<PaymentPreviewResponse.ItemSummary> summaries = new java.util.ArrayList<>();
