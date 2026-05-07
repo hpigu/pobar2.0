@@ -14,7 +14,6 @@ const session = ref(null)
 const invalid = ref(false)
 const categories = ref([])
 const products = ref([])
-const attributes = ref([])
 const selectedCategory = ref(null)
 const keyword = ref('')
 const cartDrawer = ref(false)
@@ -22,7 +21,6 @@ const cartDrawer = ref(false)
 // 品項 dialog
 const dialogVisible = ref(false)
 const selectedProduct = ref(null)
-const selectedOptions = ref({})
 const quantity = ref(1)
 const note = ref('')
 
@@ -43,19 +41,16 @@ onMounted(async () => {
     const s = await api.get(`/api/tables/sessions/${token}`)
     session.value = s.data.data
     cart.setSession(token)
-    const [menuRes, attrRes, cartRes] = await Promise.all([
+    const [menuRes, cartRes] = await Promise.all([
       api.get('/api/menu'),
-      api.get('/api/attributes'),
       api.get(`/api/cart/${token}`),
     ])
     products.value = menuRes.data.data || []
-    // 取得唯一 categories
     const catMap = {}
     products.value.forEach(p => {
       if (p.categoryId) catMap[p.categoryId] = { id: p.categoryId, name: p.categoryName }
     })
     categories.value = Object.values(catMap)
-    attributes.value = attrRes.data.data || []
     cart.syncFromWs(cartRes.data.data || [])
     connect()
   } catch {
@@ -159,18 +154,7 @@ async function submitOrder() {
         NT$ {{ selectedProduct?.price }}
       </div>
 
-      <template v-for="attrType in attributes" :key="attrType.id">
-        <div v-if="attrType.options?.length" style="margin-bottom:12px">
-          <div style="font-weight:600; margin-bottom:6px">{{ attrType.nameZh }}</div>
-          <el-radio-group v-model="selectedOptions[attrType.id]">
-            <el-radio-button v-for="opt in attrType.options" :key="opt.id" :label="opt.id">
-              {{ opt.nameZh }}
-            </el-radio-button>
-          </el-radio-group>
-        </div>
-      </template>
-
-      <el-form-item label="備註">
+<el-form-item label="備註">
         <el-input v-model="note" placeholder="過敏原、特殊需求..." type="textarea" :rows="2" />
       </el-form-item>
 

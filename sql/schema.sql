@@ -144,36 +144,6 @@ CREATE TABLE IF NOT EXISTS `product` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─────────────────────────────────────────
--- 酒單篩選維度
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `drink_attribute_type` (
-    `id`            INT         NOT NULL AUTO_INCREMENT,
-    `name_zh`       VARCHAR(50) NOT NULL COMMENT '如：基酒、甜度、香氣',
-    `name_en`       VARCHAR(50),
-    `display_order` INT         NOT NULL DEFAULT 0,
-    `is_active`     TINYINT(1)  NOT NULL DEFAULT 1,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `drink_attribute_option` (
-    `id`              INT         NOT NULL AUTO_INCREMENT,
-    `attribute_type_id` INT       NOT NULL,
-    `name_zh`         VARCHAR(50) NOT NULL COMMENT '如：琴酒、微甜、花香',
-    `name_en`         VARCHAR(50),
-    `display_order`   INT         NOT NULL DEFAULT 0,
-    `is_active`       TINYINT(1)  NOT NULL DEFAULT 1,
-    PRIMARY KEY (`id`),
-    INDEX `idx_type_id` (`attribute_type_id`),
-    FOREIGN KEY (`attribute_type_id`) REFERENCES `drink_attribute_type`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `product_attribute` (
-    `product_id`          INT NOT NULL,
-    `attribute_option_id` INT NOT NULL,
-    PRIMARY KEY (`product_id`, `attribute_option_id`),
-    FOREIGN KEY (`product_id`)          REFERENCES `product`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`attribute_option_id`) REFERENCES `drink_attribute_option`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─────────────────────────────────────────
 -- 酒譜 / 食材
