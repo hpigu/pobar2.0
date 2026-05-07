@@ -38,8 +38,8 @@ public interface OrderItemMapper extends BaseMapper<OrderItem> {
     @Select("""
             SELECT
               oi.product_id                               AS productId,
-              p.name                                      AS productName,
-              c.name                                      AS categoryName,
+              p.name_zh                                   AS productName,
+              c.name_zh                                   AS categoryName,
               SUM(oi.quantity)                            AS totalQuantity,
               SUM(oi.price * oi.quantity)                 AS totalRevenue
             FROM order_item oi
@@ -48,7 +48,7 @@ public interface OrderItemMapper extends BaseMapper<OrderItem> {
             INNER JOIN category c ON c.id = p.category_id
             WHERE oi.status != 'CANCELLED'
               AND o.created_at BETWEEN #{from} AND #{to}
-            GROUP BY oi.product_id, p.name, c.name
+            GROUP BY oi.product_id, p.name_zh, c.name_zh
             ORDER BY totalQuantity DESC
             LIMIT #{limit}
             """)
