@@ -28,7 +28,7 @@ public class Product {
     private LocalTime availableEndTime;
     private LocalDate availableFromDate;
     private LocalDate availableToDate;
-    private Integer createdBy;
+    private String createdBy;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

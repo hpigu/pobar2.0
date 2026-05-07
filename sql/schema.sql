@@ -133,15 +133,14 @@ CREATE TABLE IF NOT EXISTS `product` (
     `available_end_time`   TIME          COMMENT '每日可點時段結束',
     `available_from_date`  DATE          COMMENT '季節上架日',
     `available_to_date`    DATE          COMMENT '季節下架日',
-    `created_by`          INT,
+    `created_by`          VARCHAR(50),
     `created_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_category_id` (`category_id`),
     INDEX `idx_type` (`type`),
     INDEX `idx_is_active_available` (`is_active`, `is_available`),
-    FOREIGN KEY (`category_id`) REFERENCES `category`(`id`),
-    FOREIGN KEY (`created_by`)  REFERENCES `user`(`id`) ON DELETE SET NULL
+    FOREIGN KEY (`category_id`) REFERENCES `category`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─────────────────────────────────────────
