@@ -13,6 +13,34 @@ const loadingSlots = ref(false)
 const form = ref({ customerName: '', customerPhone: '', partySize: 2, notes: '' })
 const submitting = ref(false)
 
+// 查詢訂位
+const queryDialog = ref(false)
+const queryPhone = ref('')
+const queryLoading = ref(false)
+const queryResults = ref([])
+const STATUS_LABEL = { CONFIRMED:'已確認', SEATED:'已入座', CANCELLED:'已取消', AUTO_CANCELLED:'逾時取消', NO_SHOW:'未到場', COMPLETED:'已完成' }
+const STATUS_TYPE  = { CONFIRMED:'success', SEATED:'warning', CANCELLED:'danger', AUTO_CANCELLED:'info', NO_SHOW:'danger', COMPLETED:'info' }
+
+async function queryMyReservations() {
+  if (!/^09\d{8}$/.test(queryPhone.value)) { ElMessage.warning('請輸入正確手機格式：09xxxxxxxx'); return }
+  queryLoading.value = true
+  try {
+    const res = await api.get(`/api/reservations/my?phone=${queryPhone.value}`)
+    queryResults.value = res.data.data || []
+    if (!queryResults.value.length) ElMessage.info('查無訂位記錄')
+  } catch {
+    ElMessage.error('查詢失敗')
+  } finally {
+    queryLoading.value = false
+  }
+}
+
+function openQueryDialog() {
+  queryPhone.value = ''
+  queryResults.value = []
+  queryDialog.value = true
+}
+
 function disabledDate(d) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const limit = new Date(today); limit.setDate(limit.getDate() + 60)
@@ -112,11 +140,14 @@ function reset() {
           {{ form.customerName }} · {{ form.partySize }} 位<br>
           <span style="font-size:12px; color:#999">如需取消請提前來電，謝謝</span>
         </div>
-        <el-button type="primary" style="margin-top:24px" @click="reset">再訂一筆</el-button>
+        <el-button style="margin-top:24px" @click="openQueryDialog">查詢我的訂位</el-button>
       </div>
 
       <!-- Step 1: 選日期 -->
       <div v-else-if="step === 1">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:8px">
+          <el-button link type="primary" size="small" @click="openQueryDialog">查詢我的訂位</el-button>
+        </div>
         <div style="color:#606266; font-size:13px; margin-bottom:12px">請選擇用餐日期：</div>
         <el-date-picker
           v-model="selectedDate"
@@ -180,6 +211,39 @@ function reset() {
       </div>
 
     </el-card>
+
+    <!-- 查詢訂位 Dialog -->
+    <el-dialog v-model="queryDialog" title="查詢我的訂位" width="92%" style="max-width:480px">
+      <div style="display:flex; gap:8px; margin-bottom:16px">
+        <el-input v-model="queryPhone" placeholder="輸入手機號碼 09xxxxxxxx"
+          maxlength="10" @keyup.enter="queryMyReservations" clearable />
+        <el-button type="primary" :loading="queryLoading" @click="queryMyReservations">查詢</el-button>
+      </div>
+      <div v-if="queryResults.length">
+        <el-card v-for="r in queryResults" :key="r.id"
+          style="margin-bottom:10px"
+          :body-style="{ padding: '12px 16px' }">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div>
+              <div style="font-weight:700; font-size:15px">{{ r.reservedAt?.slice(0,16).replace('T',' ') }}</div>
+              <div style="font-size:13px; color:#606266; margin-top:2px">
+                {{ r.customerName }} · {{ r.partySize }} 位
+              </div>
+              <div v-if="r.notes" style="font-size:12px; color:#909399; margin-top:2px">{{ r.notes }}</div>
+            </div>
+            <el-tag :type="STATUS_TYPE[r.status] || 'info'" size="small">
+              {{ STATUS_LABEL[r.status] || r.status }}
+            </el-tag>
+          </div>
+        </el-card>
+      </div>
+      <div v-else-if="!queryLoading" style="color:#909399; text-align:center; padding:16px 0; font-size:13px">
+        輸入手機號碼後點查詢
+      </div>
+      <template #footer>
+        <el-button @click="queryDialog = false">關閉</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

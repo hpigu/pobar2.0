@@ -113,6 +113,13 @@ public class ReservationServiceImpl implements ReservationService {
         return slots;
     }
 
+    @Override
+    public List<ReservationResponse> listByPhone(String phone) {
+        return reservationMapper.selectByPhone(phone).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private ReservationResponse toResponse(Reservation r) {
         ReservationResponse resp = new ReservationResponse();
         resp.setId(r.getId());

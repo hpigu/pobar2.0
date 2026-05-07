@@ -39,4 +39,13 @@ public interface ReservationMapper extends BaseMapper<Reservation> {
             """)
     List<Reservation> selectActiveByDateRange(@Param("from") LocalDateTime from,
                                               @Param("to") LocalDateTime to);
+
+    // 顧客以手機查自己的訂位（近 90 天，最新在前）
+    @Select("""
+            SELECT * FROM reservation
+            WHERE customer_phone = #{phone}
+              AND reserved_at >= NOW() - INTERVAL 90 DAY
+            ORDER BY reserved_at DESC
+            """)
+    List<Reservation> selectByPhone(@Param("phone") String phone);
 }

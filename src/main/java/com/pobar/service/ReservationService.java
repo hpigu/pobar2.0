@@ -18,4 +18,6 @@ public interface ReservationService {
     void autoMarkNoShow();
 
     List<TimeSlotResponse> getSlots(LocalDate date);
+
+    List<ReservationResponse> listByPhone(String phone);
 }
