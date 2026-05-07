@@ -289,25 +289,4 @@ INSERT INTO product (category_id, name_zh, name_en, description_zh, price, type,
   350, 'DRINK', 1, 1, 1
 );
 
--- ────────────────────────────────────────────────────────────
--- 3. 飲品屬性（drink_attribute_type + drink_attribute_option）
--- ────────────────────────────────────────────────────────────
-
--- 屬性類型
-INSERT INTO drink_attribute_type (name_zh, name_en, display_order, is_active) VALUES
-  ('冰量', 'Ice Level',  1, 1),
-  ('甜度', 'Sweetness',  2, 1);
-
--- 冰量選項
-INSERT INTO drink_attribute_option (attribute_type_id, name_zh, name_en, display_order, is_active) VALUES
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '冰量' LIMIT 1), '去冰',  'No Ice',    1, 1),
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '冰量' LIMIT 1), '少冰',  'Light Ice', 2, 1),
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '冰量' LIMIT 1), '正常冰', 'Regular',  3, 1),
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '冰量' LIMIT 1), '多冰',  'Extra Ice', 4, 1);
-
--- 甜度選項
-INSERT INTO drink_attribute_option (attribute_type_id, name_zh, name_en, display_order, is_active) VALUES
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '甜度' LIMIT 1), '不甜',  'Unsweetened', 1, 1),
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '甜度' LIMIT 1), '微甜',  'Slightly',    2, 1),
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '甜度' LIMIT 1), '半糖',  'Half Sweet',  3, 1),
-  ((SELECT id FROM drink_attribute_type WHERE name_zh = '甜度' LIMIT 1), '全糖',  'Full Sweet',  4, 1);
+-- 調酒無客製化維度，顧客以備註欄溝通特殊需求即可。
