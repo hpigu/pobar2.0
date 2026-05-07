@@ -1,11 +1,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useWebSocket } from '@/composables/useWebSocket'
 import api from '@/api/axios'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
+const auth = useAuthStore()
 const items = ref([])
 let pollTimer = null
+
+async function logout() {
+  await auth.logout()
+  router.push('/login')
+}
 
 async function fetchItems() {
   const res = await api.get('/api/orders/display?type=FOOD')
@@ -59,7 +68,10 @@ function elapsedMin(createdAt) {
   <div class="display-page">
     <div class="display-header">
       <span>🍳 廚房顯示</span>
-      <span style="font-size:14px; color:#aaa">{{ items.length }} 筆待處理</span>
+      <div style="display:flex; align-items:center; gap:16px">
+        <span style="font-size:14px; color:#aaa">{{ items.length }} 筆待處理</span>
+        <el-button size="small" plain @click="logout" style="color:#aaa; border-color:#444; background:transparent">登出</el-button>
+      </div>
     </div>
 
     <div v-if="items.length === 0" class="empty-state">
