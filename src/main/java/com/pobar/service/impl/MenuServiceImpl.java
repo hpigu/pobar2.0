@@ -31,12 +31,9 @@ public class MenuServiceImpl implements MenuService {
 
     private final CategoryMapper categoryMapper;
     private final ProductMapper productMapper;
-    private final DrinkAttributeTypeMapper attributeTypeMapper;
-    private final DrinkAttributeOptionMapper attributeOptionMapper;
     private final IngredientMapper ingredientMapper;
     private final RecipeMapper recipeMapper;
     private final RecipeIngredientMapper recipeIngredientMapper;
-    private final ProductAttributeMapper productAttributeMapper;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -96,16 +93,7 @@ public class MenuServiceImpl implements MenuService {
             wrapper.eq(Product::getIsAvailable, 1);
         }
 
-        List<Product> products = productMapper.selectList(wrapper);
-
-        // 多選屬性篩選（前端傳來選項 ID，取交集）
-        if (query.getAttributeOptionIds() != null && !query.getAttributeOptionIds().isEmpty()) {
-            products = products.stream()
-                .filter(p -> hasAllAttributes(p.getId(), query.getAttributeOptionIds()))
-                .collect(Collectors.toList());
-        }
-
-        return products;
+        return productMapper.selectList(wrapper);
     }
 
     @Override
@@ -120,13 +108,12 @@ public class MenuServiceImpl implements MenuService {
     @Override
     @Transactional
     @Audit(action = "CREATE_PRODUCT", entityType = "PRODUCT")
-    public Product createProduct(ProductSaveRequest request, Integer operatorId) {
+    public Product createProduct(ProductSaveRequest request, String operatorAccount) {
         Product product = buildProduct(request);
-        product.setCreatedBy(operatorId);
+        product.setCreatedBy(operatorAccount);
         product.setIsActive(1);
         product.setIsAvailable(1);
         productMapper.insert(product);
-        saveProductAttributes(product.getId(), request.getAttributeOptionIds());
         return product;
     }
 
@@ -134,11 +121,10 @@ public class MenuServiceImpl implements MenuService {
     @Transactional
     @Audit(action = "UPDATE_PRODUCT", entityType = "PRODUCT")
     public Product updateProduct(Integer id, ProductSaveRequest request) {
-        Product product = getProduct(id);
+        getProduct(id);
         Product updated = buildProduct(request);
         updated.setId(id);
         productMapper.updateById(updated);
-        saveProductAttributes(id, request.getAttributeOptionIds());
         return updated;
     }
 
@@ -242,19 +228,6 @@ public class MenuServiceImpl implements MenuService {
         product.setAvailableFromDate(request.getAvailableFromDate());
         product.setAvailableToDate(request.getAvailableToDate());
         return product;
-    }
-
-    private void saveProductAttributes(Integer productId, List<Integer> optionIds) {
-        productAttributeMapper.deleteByProductId(productId);
-        if (optionIds == null || optionIds.isEmpty()) return;
-        for (Integer optionId : optionIds) {
-            productAttributeMapper.insert(productId, optionId);
-        }
-    }
-
-    private boolean hasAllAttributes(Integer productId, List<Integer> optionIds) {
-        int matched = productAttributeMapper.countMatchingOptions(productId, optionIds);
-        return matched == optionIds.size();
     }
 
     private String getExtension(String fileName) {

@@ -35,6 +35,4 @@ public class ProductSaveRequest {
     private LocalDate availableFromDate;
     private LocalDate availableToDate;
 
-    // 酒品屬性選項 ID 清單
-    private List<Integer> attributeOptionIds;
 }

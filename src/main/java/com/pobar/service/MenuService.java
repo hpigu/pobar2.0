@@ -20,7 +20,7 @@ public interface MenuService {
     // 品項
     List<Product> listProducts(ProductQueryRequest query);
     Product getProduct(Integer id);
-    Product createProduct(ProductSaveRequest request, Integer operatorId);
+    Product createProduct(ProductSaveRequest request, String operatorAccount);
     Product updateProduct(Integer id, ProductSaveRequest request);
     void toggleAvailability(Integer id, boolean available);
     void deleteProduct(Integer id);

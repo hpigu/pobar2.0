@@ -32,7 +32,15 @@ public class MenuController {
 
     @PostMapping("/categories")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<Category> saveCategory(@RequestBody Category category) {
+    public Result<Category> createCategory(@RequestBody Category category) {
+        category.setId(null);
+        return Result.ok(menuService.saveCategory(category));
+    }
+
+    @PutMapping("/categories/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public Result<Category> updateCategory(@PathVariable Integer id, @RequestBody Category category) {
+        category.setId(id);
         return Result.ok(menuService.saveCategory(category));
     }
 
@@ -59,8 +67,8 @@ public class MenuController {
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
     public Result<Product> createProduct(@Valid @RequestBody ProductSaveRequest request,
                                          Authentication auth) {
-        Integer userId = (Integer) auth.getPrincipal();
-        return Result.ok(menuService.createProduct(request, userId));
+        String account = String.valueOf(auth.getDetails());
+        return Result.ok(menuService.createProduct(request, account));
     }
 
     @PutMapping("/menu/{id}")

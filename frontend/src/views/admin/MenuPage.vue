@@ -8,7 +8,7 @@ const activeTab = ref('products')
 // ── 分類 ────────────────────────────────────
 const categories = ref([])
 const catDialog = ref(false)
-const catForm = ref({ id: null, name: '', sortOrder: 0 })
+const catForm = ref({ id: null, nameZh: '', nameEn: '', displayOrder: 0 })
 
 async function loadCategories() {
   const res = await api.get('/api/categories')
@@ -16,7 +16,9 @@ async function loadCategories() {
 }
 
 function openCatDialog(row = null) {
-  catForm.value = row ? { ...row } : { id: null, name: '', sortOrder: 0 }
+  catForm.value = row
+    ? { id: row.id, nameZh: row.nameZh, nameEn: row.nameEn, displayOrder: row.displayOrder }
+    : { id: null, nameZh: '', nameEn: '', displayOrder: 0 }
   catDialog.value = true
 }
 
@@ -45,7 +47,7 @@ async function deleteCategory(id) {
 // ── 品項 ────────────────────────────────────
 const products = ref([])
 const productDialog = ref(false)
-const productForm = ref({ id: null, nameZh: '', nameEn: '', categoryId: null, price: 0, type: 'DRINK', description: '' })
+const productForm = ref({ id: null, nameZh: '', nameEn: '', categoryId: null, price: 0, type: 'DRINK', descriptionZh: '' })
 const uploadingId = ref(null)
 
 async function loadProducts() {
@@ -55,8 +57,8 @@ async function loadProducts() {
 
 function openProductDialog(row = null) {
   productForm.value = row
-    ? { id: row.id, nameZh: row.nameZh, nameEn: row.nameEn, categoryId: row.categoryId, price: row.price, type: row.type, description: row.description }
-    : { id: null, nameZh: '', nameEn: '', categoryId: null, price: 0, type: 'DRINK', description: '' }
+    ? { id: row.id, nameZh: row.nameZh, nameEn: row.nameEn, categoryId: row.categoryId, price: row.price, type: row.type, descriptionZh: row.descriptionZh }
+    : { id: null, nameZh: '', nameEn: '', categoryId: null, price: 0, type: 'DRINK', descriptionZh: '' }
   productDialog.value = true
 }
 
@@ -75,7 +77,7 @@ async function saveProduct() {
 
 async function toggleAvailability(row) {
   try {
-    await api.put(`/api/menu/${row.id}/availability`, { available: !row.isAvailable })
+    await api.put(`/api/menu/${row.id}/availability?available=${row.isAvailable ? 'false' : 'true'}`)
     loadProducts()
   } catch { ElMessage.error('更新失敗') }
 }
@@ -104,7 +106,7 @@ async function uploadImage(row, e) {
 }
 
 function categoryName(id) {
-  return categories.value.find(c => c.id === id)?.name || '-'
+  return categories.value.find(c => c.id === id)?.nameZh || '-'
 }
 
 onMounted(() => { loadCategories(); loadProducts() })
@@ -164,8 +166,9 @@ onMounted(() => { loadCategories(); loadProducts() })
           <el-button type="primary" @click="openCatDialog()">新增分類</el-button>
         </div>
         <el-table :data="categories" border>
-          <el-table-column prop="name" label="名稱" />
-          <el-table-column prop="sortOrder" label="排序" width="80" />
+          <el-table-column prop="nameZh" label="中文名稱" />
+          <el-table-column prop="nameEn" label="英文名稱" />
+          <el-table-column prop="displayOrder" label="排序" width="80" />
           <el-table-column label="操作" width="140">
             <template #default="{ row }">
               <el-button link type="primary" size="small" @click="openCatDialog(row)">編輯</el-button>
@@ -180,8 +183,9 @@ onMounted(() => { loadCategories(); loadProducts() })
     <!-- 分類 Dialog -->
     <el-dialog v-model="catDialog" :title="catForm.id ? '編輯分類' : '新增分類'" width="360px">
       <el-form label-width="70px">
-        <el-form-item label="名稱"><el-input v-model="catForm.name" /></el-form-item>
-        <el-form-item label="排序"><el-input-number v-model="catForm.sortOrder" :min="0" /></el-form-item>
+        <el-form-item label="中文名稱"><el-input v-model="catForm.nameZh" /></el-form-item>
+        <el-form-item label="英文名稱"><el-input v-model="catForm.nameEn" /></el-form-item>
+        <el-form-item label="排序"><el-input-number v-model="catForm.displayOrder" :min="0" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="catDialog = false">取消</el-button>
@@ -206,7 +210,7 @@ onMounted(() => { loadCategories(); loadProducts() })
           </el-radio-group>
         </el-form-item>
         <el-form-item label="價格"><el-input-number v-model="productForm.price" :min="0" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="productForm.description" type="textarea" :rows="2" /></el-form-item>
+        <el-form-item label="描述"><el-input v-model="productForm.descriptionZh" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="productDialog = false">取消</el-button>
