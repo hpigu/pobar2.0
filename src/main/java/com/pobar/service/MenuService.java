@@ -2,6 +2,7 @@ package com.pobar.service;
 
 import com.pobar.dto.menu.ProductQueryRequest;
 import com.pobar.dto.menu.ProductSaveRequest;
+import com.pobar.dto.menu.RecipeDetailDto;
 import com.pobar.dto.menu.RecipeSaveRequest;
 import com.pobar.entity.Category;
 import com.pobar.entity.Ingredient;
@@ -29,4 +30,5 @@ public interface MenuService {
     // 酒譜
     Recipe getRecipe(Integer productId);
     Recipe saveRecipe(Integer productId, RecipeSaveRequest request);
+    RecipeDetailDto getRecipeDetail(Integer productId);
 }

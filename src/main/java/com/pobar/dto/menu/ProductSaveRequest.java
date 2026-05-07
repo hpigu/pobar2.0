@@ -6,9 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 public class ProductSaveRequest {
@@ -28,11 +26,7 @@ public class ProductSaveRequest {
     @NotBlank(message = "類型不得為空")
     private String type;
 
-    private String descriptionZh;
-    private String descriptionEn;
-    private LocalTime availableStartTime;
-    private LocalTime availableEndTime;
-    private LocalDate availableFromDate;
-    private LocalDate availableToDate;
+    private LocalDateTime availableFrom;
+    private LocalDateTime availableTo;
 
 }

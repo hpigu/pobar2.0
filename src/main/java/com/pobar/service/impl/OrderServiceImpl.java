@@ -1,5 +1,6 @@
 package com.pobar.service.impl;
 
+import com.pobar.dto.order.OrderItemDisplay;
 import com.pobar.dto.order.SubmitOrderRequest;
 import com.pobar.entity.*;
 import com.pobar.exception.BusinessException;
@@ -99,7 +100,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderItem> getBySession(String sessionToken) {
+    public List<OrderItemDisplay> getBySession(String sessionToken) {
         TableSession session = tableService.getSessionByToken(sessionToken);
         return orderItemMapper.selectBySessionId(session.getId());
     }
@@ -173,8 +174,9 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("無權限更新酒品訂單");
         }
 
-        // 狀態流程：PENDING → IN_PROGRESS → READY
+        // 狀態流程：PENDING → READY 或 PENDING → IN_PROGRESS → READY
         boolean valid = ("PENDING".equals(current) && "IN_PROGRESS".equals(newStatus))
+                     || ("PENDING".equals(current) && "READY".equals(newStatus))
                      || ("IN_PROGRESS".equals(current) && "READY".equals(newStatus));
         if (!valid) {
             throw new BusinessException("不合法的狀態變更：" + current + " → " + newStatus);
@@ -202,12 +204,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderItem> getBySessionId(Integer sessionId) {
+    public List<OrderItemDisplay> getBySessionId(Integer sessionId) {
         return orderItemMapper.selectBySessionId(sessionId);
     }
 
     @Override
-    public List<OrderItem> getActiveByType(String type) {
+    public List<OrderItemDisplay> getActiveByType(String type) {
         return orderItemMapper.selectActiveByType(type);
     }
 }

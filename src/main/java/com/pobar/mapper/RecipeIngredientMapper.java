@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface RecipeIngredientMapper extends BaseMapper<RecipeIngredient> {
@@ -16,4 +17,19 @@ public interface RecipeIngredientMapper extends BaseMapper<RecipeIngredient> {
 
     @Delete("DELETE FROM recipe_ingredient WHERE recipe_id = #{recipeId}")
     int deleteByRecipeId(Integer recipeId);
+
+    @Select("""
+            SELECT ri.id,
+                   ri.recipe_id     AS recipeId,
+                   ri.ingredient_id AS ingredientId,
+                   i.name           AS ingredientName,
+                   ri.quantity,
+                   ri.unit,
+                   ri.display_order AS displayOrder
+            FROM recipe_ingredient ri
+            JOIN ingredient i ON i.id = ri.ingredient_id
+            WHERE ri.recipe_id = #{recipeId}
+            ORDER BY ri.display_order
+            """)
+    List<Map<String, Object>> selectDetailByRecipeId(Integer recipeId);
 }

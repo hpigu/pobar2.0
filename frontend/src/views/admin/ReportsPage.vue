@@ -39,7 +39,7 @@ function buildHourly() {
     title: { text: '今日每小時收入' },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: dailyData.value.hourly.map(h => `${h.hour}時`) },
-    yAxis: { type: 'value' },
+    yAxis: { type: 'value', minInterval: 1 },
     series: [{ type: 'bar', data: dailyData.value.hourly.map(h => h.revenue), name: '收入' }],
   }
 }
@@ -49,7 +49,7 @@ function buildRanking() {
   rankingOption.value = {
     title: { text: '銷售排行 Top10' },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'value' },
+    xAxis: { type: 'value', minInterval: 1 },
     yAxis: { type: 'category', data: rankingData.value.map(r => r.productName).reverse() },
     series: [{ type: 'bar', data: rankingData.value.map(r => r.totalQuantity).reverse(), name: '銷售量' }],
   }
@@ -62,7 +62,7 @@ function buildMonthly() {
     tooltip: { trigger: 'axis' },
     legend: { data: ['今年', '去年'] },
     xAxis: { type: 'category', data: monthlyData.value.dates },
-    yAxis: { type: 'value' },
+    yAxis: { type: 'value', minInterval: 1 },
     series: [
       { name: '今年', type: 'line', smooth: true, data: monthlyData.value.revenues },
       { name: '去年', type: 'line', smooth: true, data: monthlyData.value.lastYear, lineStyle: { type: 'dashed' } },
@@ -89,9 +89,9 @@ async function onDateChange() {
     <el-card style="margin-bottom:20px">
       <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px">
         <el-date-picker v-model="dailyDate" type="date" value-format="YYYY-MM-DD" @change="onDateChange" />
-        <el-statistic v-if="dailyData" title="總收入" :value="dailyData.totalRevenue" prefix="NT$" />
-        <el-statistic v-if="dailyData" title="桌數" :value="dailyData.orderCount" />
-        <el-statistic v-if="dailyData" title="人數" :value="dailyData.guestCount" />
+        <el-statistic v-if="dailyData" title="總收入" :value="dailyData.totalRevenue" prefix="NT$" :precision="0" />
+        <el-statistic v-if="dailyData" title="桌數" :value="dailyData.orderCount" :precision="0" />
+        <el-statistic v-if="dailyData" title="人數" :value="dailyData.guestCount" :precision="0" />
       </div>
       <VChart style="height:300px" :option="hourlyOption" autoresize />
     </el-card>

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pobar.dto.menu.RecipeDetailDto;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +23,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -212,21 +214,43 @@ public class MenuServiceImpl implements MenuService {
         return recipe;
     }
 
+    @Override
+    public RecipeDetailDto getRecipeDetail(Integer productId) {
+        Recipe recipe = recipeMapper.selectByProductId(productId);
+        RecipeDetailDto dto = new RecipeDetailDto();
+        if (recipe == null) {
+            dto.setProductId(productId);
+            dto.setIngredients(java.util.Collections.emptyList());
+            return dto;
+        }
+        dto.setId(recipe.getId());
+        dto.setProductId(recipe.getProductId());
+        dto.setPreparationNotes(recipe.getPreparationNotes());
+        List<Map<String, Object>> rows = recipeIngredientMapper.selectDetailByRecipeId(recipe.getId());
+        List<RecipeDetailDto.IngredientLine> lines = rows.stream().map(r -> {
+            RecipeDetailDto.IngredientLine line = new RecipeDetailDto.IngredientLine();
+            line.setIngredientId((Integer) r.get("ingredientId"));
+            line.setIngredientName((String) r.get("ingredientName"));
+            line.setQuantity(r.get("quantity") instanceof java.math.BigDecimal bd ? bd : new java.math.BigDecimal(r.get("quantity").toString()));
+            line.setUnit((String) r.get("unit"));
+            line.setDisplayOrder(r.get("displayOrder") != null ? ((Number) r.get("displayOrder")).intValue() : 0);
+            return line;
+        }).collect(java.util.stream.Collectors.toList());
+        dto.setIngredients(lines);
+        return dto;
+    }
+
     // ─── 私用方法 ─────────────────────────────────
 
     private Product buildProduct(ProductSaveRequest request) {
         Product product = new Product();
         product.setNameZh(XssUtil.sanitize(request.getNameZh()));
         product.setNameEn(XssUtil.sanitize(request.getNameEn()));
-        product.setDescriptionZh(XssUtil.sanitize(request.getDescriptionZh()));
-        product.setDescriptionEn(XssUtil.sanitize(request.getDescriptionEn()));
         product.setCategoryId(request.getCategoryId());
         product.setPrice(request.getPrice());
         product.setType(request.getType());
-        product.setAvailableStartTime(request.getAvailableStartTime());
-        product.setAvailableEndTime(request.getAvailableEndTime());
-        product.setAvailableFromDate(request.getAvailableFromDate());
-        product.setAvailableToDate(request.getAvailableToDate());
+        product.setAvailableFrom(request.getAvailableFrom());
+        product.setAvailableTo(request.getAvailableTo());
         return product;
     }
 

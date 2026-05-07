@@ -23,7 +23,7 @@ async function fetchItems() {
 
 async function updateStatus(id, status) {
   try {
-    await api.patch(`/api/orders/items/${id}/status`, { status })
+    await api.put(`/api/orders/items/${id}/status`, { status })
     await fetchItems()
   } catch { ElMessage.error('更新失敗') }
 }
@@ -82,11 +82,11 @@ function elapsedMin(createdAt) {
       <el-card v-for="item in items" :key="item.id"
         class="order-card" :class="item.status.toLowerCase()">
         <div class="card-header">
-          <span class="table-label">桌 {{ item.tableNames || item.sessionId }}</span>
+          <span class="table-label">{{ item.tableNames || `Session ${item.sessionId}` }}</span>
           <el-tag :type="statusType(item.status)" size="small">{{ statusLabel(item.status) }}</el-tag>
         </div>
         <div class="item-name">{{ item.productName }}</div>
-        <div class="item-qty">x{{ item.quantity }}</div>
+        <div class="item-qty">× {{ item.quantity }}</div>
         <div v-if="item.notes" class="item-note">📝 {{ item.notes }}</div>
         <div class="item-elapsed">{{ elapsedMin(item.createdAt) }} 分鐘前</div>
         <div class="card-actions">

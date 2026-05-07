@@ -38,10 +38,6 @@ async function logout() {
           <el-icon><Box /></el-icon>食材管理
         </el-menu-item>
 
-        <el-menu-item v-if="isAdmin" index="/admin/attributes">
-          <el-icon><List /></el-icon>屬性管理
-        </el-menu-item>
-
         <el-menu-item v-if="isAdmin" index="/admin/settings">
           <el-icon><Setting /></el-icon>系統設定
         </el-menu-item>

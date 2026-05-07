@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='員工帳號與角色管理';
 
 -- 登入失敗次數（防暴力破解）
 CREATE TABLE IF NOT EXISTS `login_attempt` (
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `login_attempt` (
     `updated_at`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_account` (`account`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登入失敗次數，防暴力破解鎖定';
 
 -- JWT 黑名單（登出後 token 失效）
 CREATE TABLE IF NOT EXISTS `jwt_blacklist` (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `jwt_blacklist` (
     `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_expires_at` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已登出的 JWT Token 黑名單';
 
 -- ─────────────────────────────────────────
 -- 桌位
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `bar_table` (
     `is_locked` TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '鎖定不開放訂位',
     `is_active` TINYINT(1)   NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='實體桌位設定（含座位圖座標）';
 
 CREATE TABLE IF NOT EXISTS `table_session` (
     `id`           INT         NOT NULL AUTO_INCREMENT,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS `table_session` (
     INDEX `idx_qr_token` (`qr_token`),
     INDEX `idx_status` (`status`),
     FOREIGN KEY (`opened_by_id`) REFERENCES `user`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='桌位使用 Session，產生 QR Code 供客人點餐';
 
 CREATE TABLE IF NOT EXISTS `table_session_table` (
     `session_id` INT NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `table_session_table` (
     PRIMARY KEY (`session_id`, `table_id`),
     FOREIGN KEY (`session_id`) REFERENCES `table_session`(`id`),
     FOREIGN KEY (`table_id`)   REFERENCES `bar_table`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Session 與桌位的多對多關聯（合桌使用）';
 
 -- ─────────────────────────────────────────
 -- 訂位
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `reservation` (
     INDEX `idx_status` (`status`),
     INDEX `idx_cancel_token` (`cancel_token`),
     FOREIGN KEY (`assigned_table_id`) REFERENCES `bar_table`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客人線上訂位紀錄';
 
 -- ─────────────────────────────────────────
 -- 菜單 / 酒單
@@ -115,24 +115,20 @@ CREATE TABLE IF NOT EXISTS `category` (
     `display_order` INT         NOT NULL DEFAULT 0,
     `is_active`     TINYINT(1)  NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品項分類（DRINK / FOOD）';
 
 CREATE TABLE IF NOT EXISTS `product` (
     `id`                  INT            NOT NULL AUTO_INCREMENT,
     `category_id`         INT            NOT NULL,
     `name_zh`             VARCHAR(100)   NOT NULL,
     `name_en`             VARCHAR(100),
-    `description_zh`      TEXT,
-    `description_en`      TEXT,
     `price`               DECIMAL(10, 0) NOT NULL,
     `type`                VARCHAR(10)    NOT NULL COMMENT 'FOOD, DRINK',
     `image_url`           VARCHAR(255),
     `is_active`           TINYINT(1)     NOT NULL DEFAULT 1 COMMENT '永久上下架',
     `is_available`        TINYINT(1)     NOT NULL DEFAULT 1 COMMENT '臨時售完',
-    `available_start_time` TIME          COMMENT '每日可點時段開始，null 表示全天',
-    `available_end_time`   TIME          COMMENT '每日可點時段結束',
-    `available_from_date`  DATE          COMMENT '季節上架日',
-    `available_to_date`    DATE          COMMENT '季節下架日',
+    `available_from` DATETIME COMMENT '供應開始時間（含日期與時間，null 表示無限制）',
+    `available_to`   DATETIME COMMENT '供應結束時間（含日期與時間）',
     `created_by`          VARCHAR(50),
     `created_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -141,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `product` (
     INDEX `idx_type` (`type`),
     INDEX `idx_is_active_available` (`is_active`, `is_available`),
     FOREIGN KEY (`category_id`) REFERENCES `category`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='酒單與餐點品項（含供應時間與圖片）';
 
 -- ─────────────────────────────────────────
 
@@ -154,8 +150,9 @@ CREATE TABLE IF NOT EXISTS `ingredient` (
     `unit`         VARCHAR(20)  NOT NULL COMMENT 'ml, oz, 顆, 片...',
     `is_available` TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '缺貨時 false，連動下架相關酒品',
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_ingredient_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='調酒用食材（基酒、利口酒、果汁等）';
 
 CREATE TABLE IF NOT EXISTS `recipe` (
     `id`                INT  NOT NULL AUTO_INCREMENT,
@@ -163,7 +160,7 @@ CREATE TABLE IF NOT EXISTS `recipe` (
     `preparation_notes` TEXT COMMENT '作法說明，如：搖盪法，雙重過濾',
     PRIMARY KEY (`id`),
     FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品項對應的調酒酒譜（一品項一份）';
 
 CREATE TABLE IF NOT EXISTS `recipe_ingredient` (
     `id`            INT            NOT NULL AUTO_INCREMENT,
@@ -176,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `recipe_ingredient` (
     INDEX `idx_recipe_id` (`recipe_id`),
     FOREIGN KEY (`recipe_id`)     REFERENCES `recipe`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`ingredient_id`) REFERENCES `ingredient`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='酒譜食材明細與用量';
 
 -- ─────────────────────────────────────────
 -- 點餐
@@ -188,7 +185,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
     PRIMARY KEY (`id`),
     INDEX `idx_session_id` (`session_id`),
     FOREIGN KEY (`session_id`) REFERENCES `table_session`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客人在一個 session 內的送單紀錄';
 
 CREATE TABLE IF NOT EXISTS `order_item` (
     `id`           INT            NOT NULL AUTO_INCREMENT,
@@ -211,7 +208,7 @@ CREATE TABLE IF NOT EXISTS `order_item` (
     FOREIGN KEY (`order_id`)     REFERENCES `orders`(`id`),
     FOREIGN KEY (`product_id`)   REFERENCES `product`(`id`),
     FOREIGN KEY (`cancelled_by`) REFERENCES `user`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='訂單品項明細，追蹤廚房 / 吧台製作狀態';
 
 -- ─────────────────────────────────────────
 -- 結帳 / 發票
@@ -231,7 +228,7 @@ CREATE TABLE IF NOT EXISTS `payment` (
     PRIMARY KEY (`id`),
     FOREIGN KEY (`session_id`)   REFERENCES `table_session`(`id`),
     FOREIGN KEY (`processed_by`) REFERENCES `user`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='結帳記錄（含服務費與支付方式）';
 
 CREATE TABLE IF NOT EXISTS `invoice` (
     `id`             INT         NOT NULL AUTO_INCREMENT,
@@ -243,26 +240,7 @@ CREATE TABLE IF NOT EXISTS `invoice` (
     `issued_at`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`payment_id`) REFERENCES `payment`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ─────────────────────────────────────────
--- 促銷（預留結構，暫不實作 UI）
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `promotion` (
-    `id`             INT            NOT NULL AUTO_INCREMENT,
-    `name`           VARCHAR(100)   NOT NULL,
-    `discount_type`  VARCHAR(20)    NOT NULL COMMENT 'PERCENTAGE, FIXED_AMOUNT',
-    `discount_value` DECIMAL(10, 2) NOT NULL,
-    `applies_to`     VARCHAR(20)    NOT NULL COMMENT 'ALL, DRINK, FOOD, CATEGORY',
-    `category_id`    INT,
-    `start_time`     TIME           COMMENT 'Happy Hour 開始時間',
-    `end_time`       TIME,
-    `start_date`     DATE,
-    `end_date`       DATE,
-    `is_active`      TINYINT(1)     NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id`),
-    FOREIGN KEY (`category_id`) REFERENCES `category`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='統一發票紀錄';
 
 -- ─────────────────────────────────────────
 -- 操作日誌（稽核紀錄）
@@ -283,7 +261,7 @@ CREATE TABLE IF NOT EXISTS `audit_log` (
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_action` (`action`),
     INDEX `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系統操作稽核日誌';
 
 -- ─────────────────────────────────────────
 -- 系統設定
@@ -293,7 +271,7 @@ CREATE TABLE IF NOT EXISTS `system_setting` (
     `setting_value` TEXT         NOT NULL,
     `description`   VARCHAR(255),
     PRIMARY KEY (`setting_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系統參數（KV 結構）';
 
 CREATE TABLE IF NOT EXISTS `backup_log` (
     `id`                INT          NOT NULL AUTO_INCREMENT,
@@ -303,7 +281,7 @@ CREATE TABLE IF NOT EXISTS `backup_log` (
     `status`            VARCHAR(10)  NOT NULL COMMENT 'SUCCESS, FAILED',
     `error_message`     TEXT,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='資料庫備份紀錄';
 
 -- ─────────────────────────────────────────
 -- 預設系統設定

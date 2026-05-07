@@ -23,7 +23,7 @@ async function fetchItems() {
 
 async function updateStatus(id, status) {
   try {
-    await api.patch(`/api/orders/items/${id}/status`, { status })
+    await api.put(`/api/orders/items/${id}/status`, { status })
     await fetchItems()
   } catch { ElMessage.error('更新失敗') }
 }
@@ -79,17 +79,16 @@ function elapsedMin(createdAt) {
       <el-card v-for="item in items" :key="item.id"
         class="order-card" :class="item.status.toLowerCase()">
         <div class="card-header">
-          <span class="table-label">桌 {{ item.tableNames || item.sessionId }}</span>
+          <span class="table-label">{{ item.tableNames || `Session ${item.sessionId}` }}</span>
           <el-tag :type="statusType(item.status)" size="small">{{ statusLabel(item.status) }}</el-tag>
         </div>
         <div class="item-name">{{ item.productName }}</div>
-        <div class="item-qty">x{{ item.quantity }}</div>
+        <div class="item-qty">× {{ item.quantity }}</div>
+        <div v-if="item.ingredientNames" class="item-ingredients">{{ item.ingredientNames }}</div>
         <div v-if="item.notes" class="item-note">📝 {{ item.notes }}</div>
         <div class="item-elapsed">{{ elapsedMin(item.createdAt) }} 分鐘前</div>
         <div class="card-actions">
-          <el-button v-if="item.status === 'PENDING'" type="warning" size="small"
-            @click="updateStatus(item.id, 'IN_PROGRESS')">開始調製</el-button>
-          <el-button v-if="item.status === 'IN_PROGRESS'" type="success" size="small"
+          <el-button type="success" size="small"
             @click="updateStatus(item.id, 'READY')">完成</el-button>
         </div>
       </el-card>
@@ -113,6 +112,7 @@ function elapsedMin(createdAt) {
 .table-label { font-weight: 700; font-size: 16px; color: #58a6ff; }
 .item-name { font-size: 20px; font-weight: 700; color: #fff; margin: 4px 0; }
 .item-qty { font-size: 32px; font-weight: 900; color: #58a6ff; }
+.item-ingredients { font-size: 12px; color: #8b949e; margin: 4px 0 2px; line-height: 1.5; }
 .item-note { font-size: 13px; color: #aaa; margin-top: 4px; }
 .item-elapsed { font-size: 12px; color: #666; margin-top: 4px; }
 .card-actions { margin-top: 12px; }

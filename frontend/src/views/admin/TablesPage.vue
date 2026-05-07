@@ -1,11 +1,16 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import api from '@/api/axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const tables = ref([])
 const dialog = ref(false)
 const form = ref({ id: null, name: '', type: 'REGULAR', capacity: 4 })
+
+watch(() => form.value.type, (type) => {
+  if (type === 'BAR_COUNTER') form.value.capacity = 1
+  else if (form.value.capacity === 1) form.value.capacity = 4
+})
 
 // ── 拖曳 ────────────────────────────────────
 const FLOOR_W = 800

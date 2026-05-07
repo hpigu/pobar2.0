@@ -1,5 +1,6 @@
 package com.pobar.service;
 
+import com.pobar.dto.order.OrderItemDisplay;
 import com.pobar.dto.order.SubmitOrderRequest;
 import com.pobar.entity.OrderItem;
 
@@ -9,11 +10,11 @@ public interface OrderService {
 
     List<OrderItem> submit(String sessionToken, SubmitOrderRequest request);
 
-    List<OrderItem> getBySession(String sessionToken);
+    List<OrderItemDisplay> getBySession(String sessionToken);
 
-    List<OrderItem> getBySessionId(Integer sessionId);
+    List<OrderItemDisplay> getBySessionId(Integer sessionId);
 
-    List<OrderItem> getActiveByType(String type);
+    List<OrderItemDisplay> getActiveByType(String type);
 
     OrderItem updateStatus(Integer itemId, String newStatus, String operatorRole);
 

@@ -21,13 +21,14 @@ const cartDrawer = ref(false)
 // 品項 dialog
 const dialogVisible = ref(false)
 const selectedProduct = ref(null)
+const ingredients = ref([])
 const quantity = ref(1)
 const note = ref('')
 
 const filteredProducts = computed(() => {
   let list = products.value
   if (selectedCategory.value) list = list.filter(p => p.categoryId === selectedCategory.value)
-  if (keyword.value) list = list.filter(p => p.name.includes(keyword.value))
+  if (keyword.value) list = list.filter(p => p.nameZh.includes(keyword.value))
   return list
 })
 
@@ -41,16 +42,13 @@ onMounted(async () => {
     const s = await api.get(`/api/tables/sessions/${token}`)
     session.value = s.data.data
     cart.setSession(token)
-    const [menuRes, cartRes] = await Promise.all([
+    const [menuRes, catRes, cartRes] = await Promise.all([
       api.get('/api/menu'),
+      api.get('/api/categories'),
       api.get(`/api/cart/${token}`),
     ])
     products.value = menuRes.data.data || []
-    const catMap = {}
-    products.value.forEach(p => {
-      if (p.categoryId) catMap[p.categoryId] = { id: p.categoryId, name: p.categoryName }
-    })
-    categories.value = Object.values(catMap)
+    categories.value = catRes.data.data || []
     cart.syncFromWs(cartRes.data.data || [])
     connect()
   } catch {
@@ -58,12 +56,16 @@ onMounted(async () => {
   }
 })
 
-function openProductDialog(product) {
+async function openProductDialog(product) {
   selectedProduct.value = product
-  selectedOptions.value = {}
+  ingredients.value = []
   quantity.value = 1
   note.value = ''
   dialogVisible.value = true
+  try {
+    const res = await api.get(`/api/menu/${product.id}/ingredients`)
+    ingredients.value = res.data.data || []
+  } catch { /* 無酒譜就不顯示 */ }
 }
 
 async function addToCart() {
@@ -130,7 +132,7 @@ async function submitOrder() {
         class="cat-tag" @click="selectedCategory = null">全部</el-tag>
       <el-tag v-for="c in categories" :key="c.id"
         :type="selectedCategory === c.id ? '' : 'info'"
-        class="cat-tag" @click="selectedCategory = c.id">{{ c.name }}</el-tag>
+        class="cat-tag" @click="selectedCategory = c.id">{{ c.nameZh }}</el-tag>
     </div>
 
     <!-- 品項列表 -->
@@ -140,23 +142,31 @@ async function submitOrder() {
         @click="p.isAvailable && openProductDialog(p)">
         <img v-if="p.imageUrl" :src="p.imageUrl" class="product-img" />
         <div v-else class="product-img-placeholder">🍸</div>
-        <div class="product-name">{{ p.name }}</div>
+        <div class="product-name">{{ p.nameZh }}</div>
         <div class="product-price">NT$ {{ p.price }}</div>
         <el-tag v-if="!p.isAvailable" type="danger" size="small">已售完</el-tag>
       </el-card>
     </div>
 
     <!-- 品項選項 dialog -->
-    <el-dialog v-model="dialogVisible" :title="selectedProduct?.name" width="90%" max-width="480px">
+    <el-dialog v-model="dialogVisible" :title="selectedProduct?.nameZh" width="90%" max-width="480px">
       <img v-if="selectedProduct?.imageUrl" :src="selectedProduct.imageUrl"
         style="width:100%; border-radius:8px; margin-bottom:16px" />
-      <div style="font-size:18px; color:#f56c6c; margin-bottom:16px">
+      <div style="font-size:18px; color:#f56c6c; margin-bottom:12px">
         NT$ {{ selectedProduct?.price }}
       </div>
 
-<el-form-item label="備註">
+      <div v-if="ingredients.length" style="margin-bottom:16px">
+        <div style="font-size:13px; color:#999; margin-bottom:6px">材料</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px">
+          <el-tag v-for="name in ingredients" :key="name" size="small" type="info">{{ name }}</el-tag>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="margin-bottom:6px; font-size:14px; color:#606266">備註</div>
         <el-input v-model="note" placeholder="過敏原、特殊需求..." type="textarea" :rows="2" />
-      </el-form-item>
+      </div>
 
       <div style="display:flex; align-items:center; gap:12px; margin-top:12px">
         <span>數量：</span>

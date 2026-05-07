@@ -3,8 +3,10 @@ package com.pobar.controller;
 import com.pobar.common.Result;
 import com.pobar.dto.menu.ProductQueryRequest;
 import com.pobar.dto.menu.ProductSaveRequest;
+import com.pobar.dto.menu.RecipeDetailDto;
 import com.pobar.dto.menu.RecipeSaveRequest;
 import com.pobar.entity.*;
+import com.pobar.mapper.RecipeMapper;
 import com.pobar.service.MenuService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -22,6 +25,7 @@ import java.util.List;
 public class MenuController {
 
     private final MenuService menuService;
+    private final RecipeMapper recipeMapper;
 
     // ─── 分類（公開讀取，管理才需登入）─────────────────
 
@@ -101,6 +105,12 @@ public class MenuController {
         return Result.ok(url);
     }
 
+    // ─── 公開：品項食材列表（只顯示名稱，不含份量）────────
+    @GetMapping("/menu/{id}/ingredients")
+    public Result<List<String>> listIngredients(@PathVariable Integer id) {
+        return Result.ok(recipeMapper.selectIngredientNamesByProductId(id));
+    }
+
     // ─── 酒譜（調酒師以上才能讀取）─────────────────────
 
     @GetMapping("/menu/{productId}/recipe")
@@ -114,6 +124,12 @@ public class MenuController {
     public Result<Recipe> saveRecipe(@PathVariable Integer productId,
                                       @Valid @RequestBody RecipeSaveRequest request) {
         return Result.ok(menuService.saveRecipe(productId, request));
+    }
+
+    @GetMapping("/menu/{productId}/recipe-detail")
+    @PreAuthorize("hasAnyRole('BARTENDER','MANAGER','ADMIN')")
+    public Result<RecipeDetailDto> getRecipeDetail(@PathVariable Integer productId) {
+        return Result.ok(menuService.getRecipeDetail(productId));
     }
 
 }

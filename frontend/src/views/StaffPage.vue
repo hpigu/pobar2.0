@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useWebSocket } from '@/composables/useWebSocket'
 import api from '@/api/axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -185,9 +186,18 @@ function statusColor(s) {
   return { OPEN: '#67c23a', CLOSED: '#909399' }[s] || '#eee'
 }
 
+// 品項完成時後端推播 /topic/staff/pickup，刷新目前桌的訂單
+const { connect: connectPickup } = useWebSocket('/topic/staff/pickup', (item) => {
+  if (selectedTable.value?.currentSessionId) {
+    selectTable(selectedTable.value)
+  }
+  ElMessage({ message: `${item.productName || '品項'} 已完成，請取餐`, type: 'success', duration: 4000 })
+})
+
 onMounted(() => {
   loadTables()
   loadReservations()
+  connectPickup()
 })
 </script>
 

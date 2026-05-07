@@ -1,6 +1,7 @@
 package com.pobar.controller;
 
 import com.pobar.common.Result;
+import com.pobar.dto.order.OrderItemDisplay;
 import com.pobar.dto.order.SubmitOrderRequest;
 import com.pobar.entity.OrderItem;
 import com.pobar.service.OrderService;
@@ -30,21 +31,21 @@ public class OrderController {
 
     // 客人查看本桌訂單（公開，by token）
     @GetMapping("/orders/session")
-    public Result<List<OrderItem>> getBySession(@RequestParam String token) {
+    public Result<List<OrderItemDisplay>> getBySession(@RequestParam String token) {
         return Result.ok(orderService.getBySession(token));
     }
 
     // 服務生查看指定 session 的訂單（by sessionId）
     @GetMapping("/orders/session/{sessionId}")
     @PreAuthorize("hasAnyRole('WAITER','MANAGER','ADMIN')")
-    public Result<List<OrderItem>> getBySessionId(@PathVariable Integer sessionId) {
+    public Result<List<OrderItemDisplay>> getBySessionId(@PathVariable Integer sessionId) {
         return Result.ok(orderService.getBySessionId(sessionId));
     }
 
     // 廚房/吧台取得待處理品項（依類型）
     @GetMapping("/orders/display")
     @PreAuthorize("hasAnyRole('KITCHEN','BARTENDER','MANAGER','ADMIN')")
-    public Result<List<OrderItem>> display(@RequestParam String type) {
+    public Result<List<OrderItemDisplay>> display(@RequestParam String type) {
         return Result.ok(orderService.getActiveByType(type.toUpperCase()));
     }
 

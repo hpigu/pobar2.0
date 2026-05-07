@@ -2,6 +2,7 @@ package com.pobar.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.pobar.dto.order.OrderItemDisplay;
 import com.pobar.dto.payment.CheckoutRequest;
 import com.pobar.dto.payment.CheckoutResponse;
 import com.pobar.dto.payment.PaymentPreviewResponse;
@@ -20,8 +21,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +28,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final TableSessionMapper sessionMapper;
     private final OrderItemMapper orderItemMapper;
-    private final ProductMapper productMapper;
     private final PaymentMapper paymentMapper;
     private final InvoiceMapper invoiceMapper;
     private final SettingService settingService;
@@ -39,7 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentPreviewResponse preview(Integer sessionId) {
         TableSession session = requireOpenSession(sessionId);
 
-        List<OrderItem> items = orderItemMapper.selectBySessionId(sessionId).stream()
+        List<OrderItemDisplay> items = orderItemMapper.selectBySessionId(sessionId).stream()
                 .filter(i -> !"CANCELLED".equals(i.getStatus()))
                 .toList();
 
@@ -58,7 +56,7 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessException(409, "此桌已結帳");
         }
 
-        List<OrderItem> items = orderItemMapper.selectBySessionId(sessionId).stream()
+        List<OrderItemDisplay> items = orderItemMapper.selectBySessionId(sessionId).stream()
                 .filter(i -> !"CANCELLED".equals(i.getStatus()))
                 .toList();
 
@@ -125,25 +123,20 @@ public class PaymentServiceImpl implements PaymentService {
         return session;
     }
 
-    private PaymentPreviewResponse buildPreview(TableSession session, List<OrderItem> items) {
+    private PaymentPreviewResponse buildPreview(TableSession session, List<OrderItemDisplay> items) {
         BigDecimal serviceChargeRate = settingService.getDecimal(
                 "service_charge_rate", new BigDecimal("0.10"));
-
-        // 批次取得品項名稱，避免 N+1
-        List<Integer> productIds = items.stream().map(OrderItem::getProductId).distinct().toList();
-        Map<Integer, String> nameMap = productIds.isEmpty() ? Map.of() :
-                productMapper.selectBatchIds(productIds).stream()
-                        .collect(Collectors.toMap(Product::getId, Product::getNameZh));
 
         BigDecimal subtotal = BigDecimal.ZERO;
         List<PaymentPreviewResponse.ItemSummary> summaries = new java.util.ArrayList<>();
 
-        for (OrderItem item : items) {
+        for (OrderItemDisplay item : items) {
             BigDecimal lineTotal = item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
             subtotal = subtotal.add(lineTotal);
 
             PaymentPreviewResponse.ItemSummary s = new PaymentPreviewResponse.ItemSummary();
-            s.setName(nameMap.getOrDefault(item.getProductId(), "未知品項"));
+            String name = item.getProductName();
+            s.setName(name == null || name.isEmpty() ? "未知品項" : name);
             s.setQuantity(item.getQuantity());
             s.setUnitPrice(item.getPrice());
             s.setLineTotal(lineTotal);

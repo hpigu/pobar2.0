@@ -1,6 +1,7 @@
 package com.pobar.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.pobar.dto.order.OrderItemDisplay;
 import com.pobar.entity.OrderItem;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -13,26 +14,47 @@ import java.util.Map;
 @Mapper
 public interface OrderItemMapper extends BaseMapper<OrderItem> {
 
-    // 查詢某 session 的所有品項（JOIN orders 取 session_id）
+    // 查詢某 session 的所有品項（JOIN product 取中文名稱）
     @Select("""
-            SELECT oi.* FROM order_item oi
-            INNER JOIN orders o ON o.id = oi.order_id
+            SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, oi.price,
+                   oi.notes, oi.type, oi.status, oi.created_at, oi.updated_at,
+                   p.name_zh AS productName,
+                   o.session_id AS sessionId,
+                   NULL AS tableNames,
+                   NULL AS ingredientNames
+            FROM order_item oi
+            INNER JOIN orders o   ON o.id = oi.order_id
+            INNER JOIN product p  ON p.id = oi.product_id
             WHERE o.session_id = #{sessionId}
             ORDER BY oi.created_at
             """)
-    List<OrderItem> selectBySessionId(Integer sessionId);
+    List<OrderItemDisplay> selectBySessionId(Integer sessionId);
 
-    // 廚房/吧台取得待處理品項（依類型篩選，排除已取消）
+    // 廚房/吧台取得待處理品項（JOIN 產品名稱、桌位名稱、酒譜食材）
     @Select("""
-            SELECT oi.* FROM order_item oi
-            INNER JOIN orders o ON o.id = oi.order_id
+            SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, oi.price,
+                   oi.notes, oi.type, oi.status, oi.created_at, oi.updated_at,
+                   p.name_zh                                              AS productName,
+                   ts.id                                                  AS sessionId,
+                   GROUP_CONCAT(DISTINCT bt.name ORDER BY bt.name SEPARATOR ', ') AS tableNames,
+                   (SELECT GROUP_CONCAT(ing.name ORDER BY ri.display_order SEPARATOR ' · ')
+                    FROM recipe r
+                    JOIN recipe_ingredient ri ON ri.recipe_id = r.id
+                    JOIN ingredient ing ON ing.id = ri.ingredient_id
+                    WHERE r.product_id = oi.product_id)                   AS ingredientNames
+            FROM order_item oi
+            INNER JOIN orders o   ON o.id = oi.order_id
             INNER JOIN table_session ts ON ts.id = o.session_id
+            INNER JOIN table_session_table tst ON tst.session_id = ts.id
+            INNER JOIN bar_table bt ON bt.id = tst.table_id
+            INNER JOIN product p  ON p.id = oi.product_id
             WHERE oi.type = #{type}
-              AND oi.status != 'CANCELLED'
+              AND oi.status IN ('PENDING','IN_PROGRESS')
               AND ts.status = 'OPEN'
+            GROUP BY oi.id, p.name_zh, ts.id
             ORDER BY oi.created_at
             """)
-    List<OrderItem> selectActiveByType(@Param("type") String type);
+    List<OrderItemDisplay> selectActiveByType(@Param("type") String type);
 
     // 銷售排行（指定時間區間，依銷售量排序）
     @Select("""
