@@ -9,23 +9,15 @@ import com.pobar.exception.BusinessException;
 import com.pobar.logging.Audit;
 import com.pobar.mapper.*;
 import com.pobar.service.MenuService;
+import com.pobar.storage.StorageService;
 import com.pobar.util.XssUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pobar.dto.menu.RecipeDetailDto;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,9 +28,7 @@ public class MenuServiceImpl implements MenuService {
     private final IngredientMapper ingredientMapper;
     private final RecipeMapper recipeMapper;
     private final RecipeIngredientMapper recipeIngredientMapper;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    private final StorageService storageService;
 
     // ─── 分類 ───────────────────────────────────
 
@@ -46,13 +36,15 @@ public class MenuServiceImpl implements MenuService {
     public List<Category> listCategories() {
         return categoryMapper.selectList(
             new LambdaQueryWrapper<Category>()
-                .eq(Category::getIsActive, 1)
+                .eq(Category::getIsActive, true)
                 .orderByAsc(Category::getDisplayOrder)
         );
     }
 
     @Override
-    @Audit(action = "SAVE_CATEGORY", entityType = "CATEGORY")
+    @Audit(action = "SAVE_CATEGORY", entityType = "CATEGORY",
+            entityIdExpr = "#category.id",
+            detailExpr = "'nameZh=' + #category.nameZh + ', nameEn=' + #category.nameEn + ', displayOrder=' + #category.displayOrder")
     public Category saveCategory(Category category) {
         category.setNameZh(XssUtil.sanitize(category.getNameZh()));
         category.setNameEn(XssUtil.sanitize(category.getNameEn()));
@@ -65,12 +57,13 @@ public class MenuServiceImpl implements MenuService {
     }
 
     @Override
-    @Audit(action = "DELETE_CATEGORY", entityType = "CATEGORY")
+    @Audit(action = "DELETE_CATEGORY", entityType = "CATEGORY",
+            entityIdExpr = "#id")
     public void deleteCategory(Integer id) {
         long count = productMapper.selectCount(
             new LambdaQueryWrapper<Product>()
                 .eq(Product::getCategoryId, id)
-                .eq(Product::getIsActive, 1)
+                .eq(Product::getIsActive, true)
         );
         if (count > 0) {
             throw new BusinessException("此分類下還有品項，無法刪除");
@@ -83,7 +76,7 @@ public class MenuServiceImpl implements MenuService {
     @Override
     public List<Product> listProducts(ProductQueryRequest query) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<Product>()
-            .eq(Product::getIsActive, 1);
+            .eq(Product::getIsActive, true);
 
         if (query.getType() != null) {
             wrapper.eq(Product::getType, query.getType());
@@ -92,7 +85,7 @@ public class MenuServiceImpl implements MenuService {
             wrapper.eq(Product::getCategoryId, query.getCategoryId());
         }
         if (Boolean.TRUE.equals(query.getAvailable())) {
-            wrapper.eq(Product::getIsAvailable, 1);
+            wrapper.eq(Product::getIsAvailable, true);
         }
 
         return productMapper.selectList(wrapper);
@@ -101,7 +94,7 @@ public class MenuServiceImpl implements MenuService {
     @Override
     public Product getProduct(Integer id) {
         Product product = productMapper.selectById(id);
-        if (product == null || product.getIsActive() == 0) {
+        if (product == null || !Boolean.TRUE.equals(product.getIsActive())) {
             throw new BusinessException(404, "品項不存在");
         }
         return product;
@@ -109,19 +102,23 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     @Transactional
-    @Audit(action = "CREATE_PRODUCT", entityType = "PRODUCT")
+    @Audit(action = "CREATE_PRODUCT", entityType = "PRODUCT",
+            entityIdExpr = "#result?.id",
+            detailExpr = "'nameZh=' + #request.nameZh + ', categoryId=' + #request.categoryId + ', price=' + #request.price + ', type=' + #request.type")
     public Product createProduct(ProductSaveRequest request, String operatorAccount) {
         Product product = buildProduct(request);
         product.setCreatedBy(operatorAccount);
-        product.setIsActive(1);
-        product.setIsAvailable(1);
+        product.setIsActive(true);
+        product.setIsAvailable(true);
         productMapper.insert(product);
         return product;
     }
 
     @Override
     @Transactional
-    @Audit(action = "UPDATE_PRODUCT", entityType = "PRODUCT")
+    @Audit(action = "UPDATE_PRODUCT", entityType = "PRODUCT",
+            entityIdExpr = "#id",
+            detailExpr = "'nameZh=' + #request.nameZh + ', categoryId=' + #request.categoryId + ', price=' + #request.price + ', type=' + #request.type")
     public Product updateProduct(Integer id, ProductSaveRequest request) {
         getProduct(id);
         Product updated = buildProduct(request);
@@ -131,43 +128,36 @@ public class MenuServiceImpl implements MenuService {
     }
 
     @Override
-    @Audit(action = "TOGGLE_PRODUCT_AVAILABILITY", entityType = "PRODUCT")
+    @Audit(action = "TOGGLE_PRODUCT_AVAILABILITY", entityType = "PRODUCT",
+            entityIdExpr = "#id",
+            detailExpr = "'available=' + #available")
     public void toggleAvailability(Integer id, boolean available) {
         Product product = getProduct(id);
-        product.setIsAvailable(available ? 1 : 0);
+        product.setIsAvailable(available);
         productMapper.updateById(product);
     }
 
     @Override
-    @Audit(action = "DELETE_PRODUCT", entityType = "PRODUCT")
+    @Audit(action = "DELETE_PRODUCT", entityType = "PRODUCT",
+            entityIdExpr = "#id")
     public void deleteProduct(Integer id) {
         Product product = getProduct(id);
-        product.setIsActive(0);
+        product.setIsActive(false);
         productMapper.updateById(product);
     }
 
     @Override
     public String saveImage(Integer productId, byte[] imageBytes, String originalFileName) {
-        String ext = getExtension(originalFileName);
-        if (!ext.equals("jpg") && !ext.equals("jpeg") && !ext.equals("png")) {
-            throw new BusinessException("只接受 jpg 或 png 圖片");
-        }
-        if (imageBytes.length > 5 * 1024 * 1024) {
-            throw new BusinessException("圖片不得超過 5MB");
-        }
-
-        String fileName = UUID.randomUUID() + "." + ext;
-        Path path = Paths.get(uploadDir, fileName);
-
-        try {
-            Files.createDirectories(path.getParent());
-            Files.write(path, imageBytes);
-        } catch (IOException e) {
-            throw new BusinessException("圖片儲存失敗");
-        }
-
-        String imageUrl = "/uploads/images/" + fileName;
+        // 圖片驗證 + 寫檔（本地 / S3）由 StorageService 包辦
+        String imageUrl = storageService.save(imageBytes, originalFileName, "images");
         Product product = getProduct(productId);
+
+        // 若有舊圖，盡力刪除（容錯：S3 / local 失敗都不影響流程）
+        String oldUrl = product.getImageUrl();
+        if (oldUrl != null && !oldUrl.isBlank()) {
+            try { storageService.delete(oldUrl); } catch (Exception ignored) {}
+        }
+
         product.setImageUrl(imageUrl);
         productMapper.updateById(product);
         return imageUrl;
@@ -184,7 +174,9 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     @Transactional
-    @Audit(action = "SAVE_RECIPE", entityType = "PRODUCT")
+    @Audit(action = "SAVE_RECIPE", entityType = "PRODUCT",
+            entityIdExpr = "#productId",
+            detailExpr = "'ingredients=' + #request.ingredients.size()")
     public Recipe saveRecipe(Integer productId, RecipeSaveRequest request) {
         getProduct(productId); // 確認品項存在
 
@@ -252,10 +244,5 @@ public class MenuServiceImpl implements MenuService {
         product.setAvailableFrom(request.getAvailableFrom());
         product.setAvailableTo(request.getAvailableTo());
         return product;
-    }
-
-    private String getExtension(String fileName) {
-        if (fileName == null || !fileName.contains(".")) return "";
-        return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
     }
 }

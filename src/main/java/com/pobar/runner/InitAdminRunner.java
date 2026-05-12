@@ -39,8 +39,10 @@ public class InitAdminRunner implements ApplicationRunner {
         admin.setAccount(adminAccount);
         admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setRole("ADMIN");
-        admin.setIsActive(1);
+        admin.setIsActive(true);
+        // 首次登入強制改密碼；改完後旗標自動清掉
+        admin.setMustChangePassword(true);
         userMapper.insert(admin);
-        log.info("已初始化管理員帳號: {}（請儘速修改密碼並移除 app.init-admin.password 設定）", adminAccount);
+        log.info("已初始化管理員帳號: {}（首次登入會被強制改密碼，請儘速登入並從 .env 移除 INIT_ADMIN_PASSWORD）", adminAccount);
     }
 }

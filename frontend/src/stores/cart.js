@@ -21,15 +21,15 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   async function addItem(item) {
-    await api.post(`/api/cart/${sessionToken.value}/items`, item)
+    await api.post('/api/cart/items', item)
   }
 
   async function removeItem(itemKey) {
-    await api.delete(`/api/cart/${sessionToken.value}/items/${itemKey}`)
+    await api.delete(`/api/cart/items/${itemKey}`)
   }
 
   async function fetchCart() {
-    const res = await api.get(`/api/cart/${sessionToken.value}`)
+    const res = await api.get('/api/cart')
     items.value = res.data.data || []
   }
 

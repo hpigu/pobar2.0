@@ -19,5 +19,6 @@ public interface ReservationService {
 
     List<TimeSlotResponse> getSlots(LocalDate date);
 
-    List<ReservationResponse> listByPhone(String phone);
+    /** 顧客查詢：必須同時提供電話與訂位代碼（避免電話被列舉）。 */
+    List<ReservationResponse> listByPhoneAndCode(String phone, String bookingCode);
 }

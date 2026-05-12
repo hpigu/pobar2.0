@@ -37,7 +37,13 @@ public interface OrderItemMapper extends BaseMapper<OrderItem> {
                    p.name_zh                                              AS productName,
                    ts.id                                                  AS sessionId,
                    GROUP_CONCAT(DISTINCT bt.name ORDER BY bt.name SEPARATOR ', ') AS tableNames,
-                   (SELECT GROUP_CONCAT(ing.name ORDER BY ri.display_order SEPARATOR ' · ')
+                   (SELECT GROUP_CONCAT(
+                              CONCAT(ing.name, ' ',
+                                CASE WHEN ri.quantity = 0
+                                     THEN ri.unit
+                                     ELSE CONCAT(TRIM(TRAILING '.' FROM TRIM(TRAILING '0' FROM ri.quantity)), ri.unit)
+                                END)
+                              ORDER BY ri.display_order SEPARATOR ' · ')
                     FROM recipe r
                     JOIN recipe_ingredient ri ON ri.recipe_id = r.id
                     JOIN ingredient ing ON ing.id = ri.ingredient_id

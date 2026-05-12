@@ -14,5 +14,7 @@ public class ReservationResponse {
     private LocalDateTime reservedAt;
     private String notes;
     private String status;
+    /** 建立成功時回給顧客，後續搭配電話查詢 */
+    private String bookingCode;
     private LocalDateTime createdAt;
 }

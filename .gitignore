@@ -13,8 +13,16 @@ target/
 .classpath
 
 # ── Spring Boot ────────────────────────
-application-local.properties
-application-local.yml
+# application-local.properties 是樣板檔（會入版控）
+# 如需個人客製設定，請改用 application-local-personal.properties
+application-local-personal.properties
+application-local-personal.yml
+
+# ── Docker 環境變數（含敏感資訊，絕不可入版控）──
+.env
+.env.local
+.env.*.local
+!.env.example
 
 # ── 上傳圖片（本地產生，不入版控）───────
 uploads/
@@ -36,5 +44,5 @@ frontend/.env.*.local
 .DS_Store
 Thumbs.db
 
-# ── Claude Code worktrees（工具內部用）──
-.claude/worktrees/
+# ── Claude Code（工具內部用，不入版控）──
+.claude/

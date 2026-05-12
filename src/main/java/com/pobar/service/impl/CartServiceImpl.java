@@ -30,10 +30,10 @@ public class CartServiceImpl implements CartService {
     @Override
     public List<CartItem> addItem(String sessionToken, CartItem item) {
         Product product = productMapper.selectById(item.getProductId());
-        if (product == null || product.getIsActive() == 0) {
+        if (product == null || !Boolean.TRUE.equals(product.getIsActive())) {
             throw new BusinessException("品項不存在");
         }
-        if (product.getIsAvailable() == 0) {
+        if (!Boolean.TRUE.equals(product.getIsAvailable())) {
             throw new BusinessException("「" + product.getNameZh() + "」目前售完");
         }
 

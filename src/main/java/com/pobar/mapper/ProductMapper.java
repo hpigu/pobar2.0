@@ -18,10 +18,10 @@ public interface ProductMapper extends BaseMapper<Product> {
             INNER JOIN recipe_ingredient ri ON ri.recipe_id = r.id
             SET p.is_available = #{available}
             WHERE ri.ingredient_id = #{ingredientId}
-            AND p.is_active = 1
+            AND p.is_active = TRUE
             """)
     int updateAvailabilityByIngredient(@Param("ingredientId") Integer ingredientId,
-                                       @Param("available") int available);
+                                       @Param("available") boolean available);
 
     // 查詢使用某食材的所有品項 ID（用於日誌記錄）
     List<Integer> selectProductIdsByIngredient(@Param("ingredientId") Integer ingredientId);

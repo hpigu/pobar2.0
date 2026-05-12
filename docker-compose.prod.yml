@@ -1,0 +1,57 @@
+# ═══════════════════════════════════════════════════════════
+# Production override
+# 啟動：docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# 與 SIT 的差異：
+#   - profile 設為 prod（更嚴的日誌等級、強制環境變數）
+#   - MySQL 完全不對外暴露（連 127.0.0.1 都不開）
+#   - 使用正式 ECPay API URL
+#   - 日誌輪轉策略以 host 端 driver 控制
+#   - 強制要求關鍵環境變數
+# ═══════════════════════════════════════════════════════════
+services:
+
+  mysql:
+    # 完全不對外暴露 — 如需查詢資料請走 SSH Tunnel
+    ports: []
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    environment:
+      # 正式環境密碼必填，無預設值
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: pobar
+      MYSQL_USER: ${DB_USER:?DB_USER is required}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # 以下五項在 prod 一律強制要求
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (>= 64 chars)}
+      # CORS：走 nginx 反代時可留空；前後端分 domain 才填
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      # ECPay 正式 API URL
+      ECPAY_INVOICE_API_URL: ${ECPAY_INVOICE_API_URL:-https://einvoice.ecpay.com.tw/B2CInvoice/Issue}
+      # 儲存（未來上 S3 改 STORAGE_TYPE=s3 並填四個 S3_* 變數）
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-ap-northeast-1}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  frontend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"

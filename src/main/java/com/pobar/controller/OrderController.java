@@ -22,16 +22,16 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    // 客人送出訂單（公開，以 QR token 識別桌子）
+    // 客人送出訂單（公開，以 X-Session-Token header 識別桌子）
     @PostMapping("/orders")
-    public Result<List<OrderItem>> submit(@RequestParam String token,
+    public Result<List<OrderItem>> submit(@RequestHeader("X-Session-Token") String token,
                                            @Valid @RequestBody SubmitOrderRequest request) {
         return Result.ok(orderService.submit(token, request));
     }
 
-    // 客人查看本桌訂單（公開，by token）
+    // 客人查看本桌訂單（公開，X-Session-Token header）
     @GetMapping("/orders/session")
-    public Result<List<OrderItemDisplay>> getBySession(@RequestParam String token) {
+    public Result<List<OrderItemDisplay>> getBySession(@RequestHeader("X-Session-Token") String token) {
         return Result.ok(orderService.getBySession(token));
     }
 

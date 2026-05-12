@@ -1,11 +1,14 @@
 package com.pobar.controller;
 
 import com.pobar.common.Result;
+import com.pobar.dto.menu.CategoryResponse;
 import com.pobar.dto.menu.ProductQueryRequest;
+import com.pobar.dto.menu.ProductResponse;
 import com.pobar.dto.menu.ProductSaveRequest;
 import com.pobar.dto.menu.RecipeDetailDto;
+import com.pobar.dto.menu.RecipeResponse;
 import com.pobar.dto.menu.RecipeSaveRequest;
-import com.pobar.entity.*;
+import com.pobar.entity.Category;
 import com.pobar.mapper.RecipeMapper;
 import com.pobar.service.MenuService;
 import jakarta.validation.Valid;
@@ -16,8 +19,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -30,22 +35,22 @@ public class MenuController {
     // ─── 分類（公開讀取，管理才需登入）─────────────────
 
     @GetMapping("/categories")
-    public Result<List<Category>> listCategories() {
-        return Result.ok(menuService.listCategories());
+    public Result<List<CategoryResponse>> listCategories() {
+        return Result.ok(menuService.listCategories().stream().map(CategoryResponse::from).toList());
     }
 
     @PostMapping("/categories")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<Category> createCategory(@RequestBody Category category) {
+    public Result<CategoryResponse> createCategory(@RequestBody Category category) {
         category.setId(null);
-        return Result.ok(menuService.saveCategory(category));
+        return Result.ok(CategoryResponse.from(menuService.saveCategory(category)));
     }
 
     @PutMapping("/categories/{id}")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<Category> updateCategory(@PathVariable Integer id, @RequestBody Category category) {
+    public Result<CategoryResponse> updateCategory(@PathVariable Integer id, @RequestBody Category category) {
         category.setId(id);
-        return Result.ok(menuService.saveCategory(category));
+        return Result.ok(CategoryResponse.from(menuService.saveCategory(category)));
     }
 
     @DeleteMapping("/categories/{id}")
@@ -58,28 +63,45 @@ public class MenuController {
     // ─── 品項（公開讀取）─────────────────────────────
 
     @GetMapping("/menu")
-    public Result<List<Product>> listProducts(ProductQueryRequest query) {
-        return Result.ok(menuService.listProducts(query));
+    public Result<List<ProductResponse>> listProducts(ProductQueryRequest query) {
+        var products = menuService.listProducts(query);
+        if (products.isEmpty()) return Result.ok(List.of());
+        var ids = products.stream().map(p -> p.getId()).toList();
+        Map<Integer, List<String>> ingredientsMap = new LinkedHashMap<>();
+        for (Map<String, Object> row : recipeMapper.selectIngredientNamesByProductIds(ids)) {
+            Integer pid = ((Number) row.get("productId")).intValue();
+            String name = (String) row.get("name");
+            ingredientsMap.computeIfAbsent(pid, k -> new ArrayList<>()).add(name);
+        }
+        return Result.ok(products.stream().map(p -> {
+            ProductResponse r = ProductResponse.from(p);
+            r.setIngredients(ingredientsMap.getOrDefault(p.getId(), List.of()));
+            return r;
+        }).toList());
     }
 
     @GetMapping("/menu/{id}")
-    public Result<Product> getProduct(@PathVariable Integer id) {
-        return Result.ok(menuService.getProduct(id));
+    public Result<ProductResponse> getProduct(@PathVariable Integer id) {
+        ProductResponse r = ProductResponse.from(menuService.getProduct(id));
+        if (r != null) {
+            r.setIngredients(recipeMapper.selectIngredientNamesByProductId(id));
+        }
+        return Result.ok(r);
     }
 
     @PostMapping("/menu")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
-    public Result<Product> createProduct(@Valid @RequestBody ProductSaveRequest request,
-                                         Authentication auth) {
+    public Result<ProductResponse> createProduct(@Valid @RequestBody ProductSaveRequest request,
+                                                 Authentication auth) {
         String account = String.valueOf(auth.getDetails());
-        return Result.ok(menuService.createProduct(request, account));
+        return Result.ok(ProductResponse.from(menuService.createProduct(request, account)));
     }
 
     @PutMapping("/menu/{id}")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
-    public Result<Product> updateProduct(@PathVariable Integer id,
-                                          @Valid @RequestBody ProductSaveRequest request) {
-        return Result.ok(menuService.updateProduct(id, request));
+    public Result<ProductResponse> updateProduct(@PathVariable Integer id,
+                                                 @Valid @RequestBody ProductSaveRequest request) {
+        return Result.ok(ProductResponse.from(menuService.updateProduct(id, request)));
     }
 
     @PutMapping("/menu/{id}/availability")
@@ -105,25 +127,19 @@ public class MenuController {
         return Result.ok(url);
     }
 
-    // ─── 公開：品項食材列表（只顯示名稱，不含份量）────────
-    @GetMapping("/menu/{id}/ingredients")
-    public Result<List<String>> listIngredients(@PathVariable Integer id) {
-        return Result.ok(recipeMapper.selectIngredientNamesByProductId(id));
-    }
-
     // ─── 酒譜（調酒師以上才能讀取）─────────────────────
 
     @GetMapping("/menu/{productId}/recipe")
     @PreAuthorize("hasAnyRole('BARTENDER','MANAGER','ADMIN')")
-    public Result<Recipe> getRecipe(@PathVariable Integer productId) {
-        return Result.ok(menuService.getRecipe(productId));
+    public Result<RecipeResponse> getRecipe(@PathVariable Integer productId) {
+        return Result.ok(RecipeResponse.from(menuService.getRecipe(productId)));
     }
 
     @PostMapping("/menu/{productId}/recipe")
     @PreAuthorize("hasAnyRole('BARTENDER','MANAGER','ADMIN')")
-    public Result<Recipe> saveRecipe(@PathVariable Integer productId,
-                                      @Valid @RequestBody RecipeSaveRequest request) {
-        return Result.ok(menuService.saveRecipe(productId, request));
+    public Result<RecipeResponse> saveRecipe(@PathVariable Integer productId,
+                                              @Valid @RequestBody RecipeSaveRequest request) {
+        return Result.ok(RecipeResponse.from(menuService.saveRecipe(productId, request)));
     }
 
     @GetMapping("/menu/{productId}/recipe-detail")

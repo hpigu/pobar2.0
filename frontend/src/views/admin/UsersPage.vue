@@ -73,7 +73,7 @@ function roleLabel(r) {
 <template>
   <div>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-      <h2>員工管理</h2>
+      <h2 style="margin:0">員工管理</h2>
       <el-button type="primary" icon="Plus" @click="openCreate">新增員工</el-button>
     </div>
 
@@ -87,15 +87,15 @@ function roleLabel(r) {
         <el-table-column prop="phone" label="手機" />
         <el-table-column label="狀態" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.isActive === 1 ? 'success' : 'danger'" size="small">
-              {{ row.isActive === 1 ? '啟用' : '停用' }}
+            <el-tag :type="row.isActive ? 'success' : 'danger'" size="small">
+              {{ row.isActive ? '啟用' : '停用' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="130">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">編輯</el-button>
-            <el-button link type="danger" :disabled="row.isActive === 0" @click="deactivate(row)">停用</el-button>
+            <el-button link type="danger" :disabled="!row.isActive" @click="deactivate(row)">停用</el-button>
           </template>
         </el-table-column>
       </el-table>

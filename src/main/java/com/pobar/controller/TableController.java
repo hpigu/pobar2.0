@@ -1,10 +1,12 @@
 package com.pobar.controller;
 
 import com.pobar.common.Result;
+import com.pobar.dto.table.BarTableResponse;
 import com.pobar.dto.table.BarTableVO;
 import com.pobar.dto.table.OpenSessionRequest;
+import com.pobar.dto.table.TableSessionPublicView;
+import com.pobar.dto.table.TableSessionResponse;
 import com.pobar.entity.BarTable;
-import com.pobar.entity.TableSession;
 import com.pobar.service.TableService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,15 +31,15 @@ public class TableController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<BarTable> saveTable(@RequestBody BarTable table) {
-        return Result.ok(tableService.saveTable(table));
+    public Result<BarTableResponse> saveTable(@RequestBody BarTable table) {
+        return Result.ok(BarTableResponse.from(tableService.saveTable(table)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public Result<BarTable> updateTable(@PathVariable Integer id, @RequestBody BarTable table) {
+    public Result<BarTableResponse> updateTable(@PathVariable Integer id, @RequestBody BarTable table) {
         table.setId(id);
-        return Result.ok(tableService.saveTable(table));
+        return Result.ok(BarTableResponse.from(tableService.saveTable(table)));
     }
 
     @DeleteMapping("/{id}")
@@ -51,10 +53,10 @@ public class TableController {
 
     @PostMapping("/sessions")
     @PreAuthorize("hasAnyRole('WAITER','MANAGER','ADMIN')")
-    public Result<TableSession> openSession(@Valid @RequestBody OpenSessionRequest request,
-                                             Authentication auth) {
+    public Result<TableSessionResponse> openSession(@Valid @RequestBody OpenSessionRequest request,
+                                                     Authentication auth) {
         Integer userId = (Integer) auth.getPrincipal();
-        return Result.ok(tableService.openSession(request, userId));
+        return Result.ok(TableSessionResponse.from(tableService.openSession(request, userId)));
     }
 
     @DeleteMapping("/sessions/{sessionId}")
@@ -72,9 +74,12 @@ public class TableController {
         return Result.ok();
     }
 
-    // 客人掃 QR code 後呼叫，確認 session 有效（公開）
+    /**
+     * 客人掃 QR code 後呼叫，確認 session 有效（公開端點）。
+     * 回傳極小 view，不暴露 openedById / openedAt 等內部欄位。
+     */
     @GetMapping("/sessions/{token}")
-    public Result<TableSession> getSession(@PathVariable String token) {
-        return Result.ok(tableService.getSessionByToken(token));
+    public Result<TableSessionPublicView> getSession(@PathVariable String token) {
+        return Result.ok(TableSessionPublicView.from(tableService.getSessionByToken(token)));
     }
 }

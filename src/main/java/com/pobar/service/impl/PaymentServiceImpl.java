@@ -46,7 +46,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    @Audit(action = "CHECKOUT", entityType = "TableSession")
+    @Audit(action = "CHECKOUT", entityType = "TableSession",
+            entityIdExpr = "#sessionId",
+            detailExpr = "'paymentMethod=' + #request.paymentMethod + ', splitCount=' + #request.splitCount + ', total=' + #result?.total + ', operatorId=' + #operatorId")
     public CheckoutResponse checkout(Integer sessionId, CheckoutRequest request, Integer operatorId) {
         requireOpenSession(sessionId);
 

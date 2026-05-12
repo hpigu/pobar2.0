@@ -10,6 +10,7 @@ public class IngredientResponse {
     private Integer id;
     private String name;
     private String unit;
+    private String category;
     private Boolean isAvailable;
     private LocalDateTime createdAt;
 }

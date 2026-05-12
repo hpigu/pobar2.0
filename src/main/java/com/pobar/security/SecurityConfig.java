@@ -1,6 +1,7 @@
 package com.pobar.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,6 +28,10 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    /** 逗號分隔的允許 origin；空字串代表不啟用 CORS（走 nginx 反代同 origin） */
+    @Value("${cors.allowed-origins:}")
+    private String allowedOriginsRaw;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -40,6 +45,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/attributes/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/tables/sessions/{token}").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                .requestMatchers(HttpMethod.GET,  "/api/orders/session").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/orders/session/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/reservations").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/slots").permitAll()
@@ -50,8 +56,15 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,    "/api/cart/**").permitAll()
                 .requestMatchers(HttpMethod.POST,   "/api/cart/**").permitAll()
                 .requestMatchers(HttpMethod.DELETE, "/api/cart/**").permitAll()
-                // 認證端點
+                // Actuator：health / info 公開（含 liveness / readiness 子路徑供 k8s probe）
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/**").authenticated()
+                // 認證端點（login / refresh 公開，其餘需登入）
                 .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/refresh").permitAll()
+                .requestMatchers("/api/auth/change-password").authenticated()
+                .requestMatchers("/api/auth/logout").authenticated()
+                .requestMatchers("/api/auth/me").authenticated()
                 // WebSocket
                 .requestMatchers("/ws/**").permitAll()
                 // 靜態資源（上傳的圖片）
@@ -72,12 +85,31 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        List<String> origins = parseOrigins();
+        // 同 origin 部署（走 nginx 反代）時 allowedOriginsRaw 為空 → CORS 形同關閉
+        // 配多個 domain 時走白名單；用 `*` 開放全部（僅限 local 測試）
+        if (origins.isEmpty()) {
+            config.setAllowedOrigins(List.of()); // 空 list = 不放行任何 cross-origin 請求
+        } else if (origins.contains("*")) {
+            config.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            config.setAllowedOrigins(origins);
+        }
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setExposedHeaders(List.of("Authorization"));
+        // 白名單模式才允許 credentials（避免 `*` + credentials 的安全漏洞）
+        config.setAllowCredentials(!origins.isEmpty() && !origins.contains("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private List<String> parseOrigins() {
+        if (allowedOriginsRaw == null || allowedOriginsRaw.isBlank()) return List.of();
+        return List.of(allowedOriginsRaw.split(",")).stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 }

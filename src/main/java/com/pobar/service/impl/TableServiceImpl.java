@@ -11,6 +11,7 @@ import com.pobar.mapper.BarTableMapper;
 import com.pobar.mapper.TableSessionMapper;
 import com.pobar.mapper.TableSessionTableMapper;
 import com.pobar.service.TableService;
+import com.pobar.util.XssUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -35,11 +36,14 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
-    @Audit(action = "SAVE_TABLE", entityType = "TABLE")
+    @Audit(action = "SAVE_TABLE", entityType = "TABLE",
+            entityIdExpr = "#table.id",
+            detailExpr = "'name=' + #table.name + ', capacity=' + #table.capacity")
     public BarTable saveTable(BarTable table) {
+        table.setName(XssUtil.sanitize(table.getName()));
         if (table.getId() == null) {
-            table.setIsActive(1);
-            table.setIsLocked(0);
+            table.setIsActive(true);
+            table.setIsLocked(false);
             barTableMapper.insert(table);
         } else {
             barTableMapper.updateById(table);
@@ -49,7 +53,8 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
-    @Audit(action = "DELETE_TABLE", entityType = "TABLE")
+    @Audit(action = "DELETE_TABLE", entityType = "TABLE",
+            entityIdExpr = "#id")
     public void deleteTable(Integer id) {
         if (tableSessionTableMapper.countActiveByTableId(id) > 0) {
             throw new BusinessException("此桌目前使用中，無法刪除");
@@ -60,7 +65,9 @@ public class TableServiceImpl implements TableService {
 
     @Override
     @Transactional
-    @Audit(action = "OPEN_SESSION", entityType = "TABLE_SESSION")
+    @Audit(action = "OPEN_SESSION", entityType = "TABLE_SESSION",
+            entityIdExpr = "#result?.id",
+            detailExpr = "'tableIds=' + #request.tableIds + ', partySize=' + #request.partySize + ', openedByUserId=' + #openedByUserId")
     public TableSession openSession(OpenSessionRequest request, Integer openedByUserId) {
         for (Integer tableId : request.getTableIds()) {
             if (tableSessionTableMapper.countActiveByTableId(tableId) > 0) {
@@ -87,7 +94,8 @@ public class TableServiceImpl implements TableService {
 
     @Override
     @Transactional
-    @Audit(action = "CLOSE_SESSION", entityType = "TABLE_SESSION")
+    @Audit(action = "CLOSE_SESSION", entityType = "TABLE_SESSION",
+            entityIdExpr = "#sessionId")
     public void closeSession(Integer sessionId) {
         TableSession session = tableSessionMapper.selectById(sessionId);
         if (session == null) throw new BusinessException(404, "Session 不存在");
@@ -102,7 +110,9 @@ public class TableServiceImpl implements TableService {
 
     @Override
     @Transactional
-    @Audit(action = "MERGE_TABLES", entityType = "TABLE_SESSION")
+    @Audit(action = "MERGE_TABLES", entityType = "TABLE_SESSION",
+            entityIdExpr = "#sessionId",
+            detailExpr = "'additionalTableIds=' + #additionalTableIds")
     public void mergeTables(Integer sessionId, List<Integer> additionalTableIds) {
         TableSession session = tableSessionMapper.selectById(sessionId);
         if (session == null || !"OPEN".equals(session.getStatus())) {

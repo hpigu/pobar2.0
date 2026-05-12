@@ -15,5 +15,5 @@ public class Category {
     private Integer displayOrder;
 
     @TableLogic
-    private Integer isActive;
+    private Boolean isActive;
 }

@@ -20,10 +20,13 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.security.SecureRandom;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import com.pobar.util.XssUtil;
 
 @Slf4j
 @Service
@@ -32,26 +35,41 @@ public class ReservationServiceImpl implements ReservationService {
 
     private static final int NO_SHOW_GRACE_MINUTES = 10;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+    /** 訂位代碼字元集（去除易混淆的 0/O/1/I/L） */
+    private static final char[] BOOKING_CODE_ALPHABET =
+            "ABCDEFGHJKMNPQRSTUVWXYZ23456789".toCharArray();
+    private static final int BOOKING_CODE_LENGTH = 8;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ReservationMapper reservationMapper;
     private final BarTableMapper barTableMapper;
     private final SettingService settingService;
 
     @Override
-    @Audit(action = "CREATE_RESERVATION", entityType = "Reservation")
     public ReservationResponse create(ReservationRequest request) {
         Reservation reservation = new Reservation();
-        reservation.setCustomerName(request.getCustomerName());
-        reservation.setCustomerPhone(request.getCustomerPhone());
+        // XSS sanitize 所有字串欄位
+        reservation.setCustomerName(XssUtil.sanitize(request.getCustomerName()));
+        reservation.setCustomerPhone(XssUtil.sanitize(request.getCustomerPhone()));
         reservation.setPartySize(request.getPartySize());
         reservation.setReservedAt(request.getReservedAt());
-        reservation.setNotes(request.getNotes());
+        reservation.setNotes(XssUtil.sanitize(request.getNotes()));
         reservation.setSeatType("REGULAR");
         reservation.setDurationMinutes(120);
         reservation.setStatus("CONFIRMED");
         reservation.setCancelToken(UUID.randomUUID().toString());
+        reservation.setBookingCode(generateBookingCode());
         reservationMapper.insert(reservation);
         return toResponse(reservation);
+    }
+
+    /** 產生 8 位易讀代碼，避免 0/O/1/I/L 混淆 */
+    private String generateBookingCode() {
+        StringBuilder sb = new StringBuilder(BOOKING_CODE_LENGTH);
+        for (int i = 0; i < BOOKING_CODE_LENGTH; i++) {
+            sb.append(BOOKING_CODE_ALPHABET[RANDOM.nextInt(BOOKING_CODE_ALPHABET.length)]);
+        }
+        return sb.toString();
     }
 
     @Override
@@ -64,7 +82,9 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    @Audit(action = "UPDATE_RESERVATION_STATUS", entityType = "Reservation")
+    @Audit(action = "UPDATE_RESERVATION_STATUS", entityType = "Reservation",
+            entityIdExpr = "#id",
+            detailExpr = "'status=' + #status + ', operatorId=' + #operatorId")
     public ReservationResponse updateStatus(Integer id, String status, Integer operatorId) {
         Reservation reservation = reservationMapper.selectById(id);
         if (reservation == null) throw new BusinessException(404, "找不到此訂位");
@@ -92,7 +112,7 @@ public class ReservationServiceImpl implements ReservationService {
         LocalTime lastSlot  = endTime.minusHours(1);
 
         long totalTables = barTableMapper.selectCount(
-            new LambdaQueryWrapper<BarTable>().eq(BarTable::getIsActive, 1));
+            new LambdaQueryWrapper<BarTable>().eq(BarTable::getIsActive, true));
 
         // 查詢當天 +/- duration 範圍內的訂位（包含跨時段衝突）
         LocalDateTime from = date.atTime(startTime).minusMinutes(durationMin);
@@ -114,8 +134,11 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public List<ReservationResponse> listByPhone(String phone) {
-        return reservationMapper.selectByPhone(phone).stream()
+    public List<ReservationResponse> listByPhoneAndCode(String phone, String bookingCode) {
+        if (phone == null || phone.isBlank() || bookingCode == null || bookingCode.isBlank()) {
+            throw new BusinessException(400, "請提供電話與訂位代碼");
+        }
+        return reservationMapper.selectByPhoneAndCode(phone.trim(), bookingCode.trim().toUpperCase()).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -129,6 +152,7 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setReservedAt(r.getReservedAt());
         resp.setNotes(r.getNotes());
         resp.setStatus(r.getStatus());
+        resp.setBookingCode(r.getBookingCode());
         resp.setCreatedAt(r.getCreatedAt());
         return resp;
     }

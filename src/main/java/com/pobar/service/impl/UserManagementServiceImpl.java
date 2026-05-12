@@ -9,6 +9,7 @@ import com.pobar.exception.BusinessException;
 import com.pobar.logging.Audit;
 import com.pobar.mapper.UserMapper;
 import com.pobar.service.UserManagementService;
+import com.pobar.util.XssUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,30 +30,34 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     @Override
-    @Audit(action = "CREATE_USER", entityType = "User")
+    @Audit(action = "CREATE_USER", entityType = "User",
+            entityIdExpr = "#result?.id",
+            detailExpr = "'account=' + #request.account + ', role=' + #request.role + ', email=' + #request.email")
     public UserResponse create(UserCreateRequest request) {
         if (userMapper.findByAccount(request.getAccount()) != null) {
             throw new BusinessException(409, "帳號已存在");
         }
         User user = new User();
-        user.setAccount(request.getAccount());
+        user.setAccount(XssUtil.sanitize(request.getAccount()));
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
+        user.setEmail(XssUtil.sanitize(request.getEmail()));
+        user.setPhone(XssUtil.sanitize(request.getPhone()));
         user.setRole(request.getRole());
-        user.setIsActive(1);
+        user.setIsActive(true);
         userMapper.insert(user);
         return toResponse(user);
     }
 
     @Override
-    @Audit(action = "UPDATE_USER", entityType = "User")
+    @Audit(action = "UPDATE_USER", entityType = "User",
+            entityIdExpr = "#id",
+            detailExpr = "'role=' + #request.role + ', email=' + #request.email + ', phone=' + #request.phone + ', passwordChanged=' + (#request.password != null and !#request.password.isBlank())")
     public UserResponse update(Integer id, UserUpdateRequest request) {
         User user = userMapper.selectById(id);
         if (user == null) throw new BusinessException(404, "找不到此用戶");
 
-        if (request.getEmail() != null) user.setEmail(request.getEmail());
-        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getEmail() != null) user.setEmail(XssUtil.sanitize(request.getEmail()));
+        if (request.getPhone() != null) user.setPhone(XssUtil.sanitize(request.getPhone()));
         if (request.getRole() != null) user.setRole(request.getRole());
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -62,11 +67,12 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     @Override
-    @Audit(action = "DEACTIVATE_USER", entityType = "User")
+    @Audit(action = "DEACTIVATE_USER", entityType = "User",
+            entityIdExpr = "#id")
     public void deactivate(Integer id) {
         User user = userMapper.selectById(id);
         if (user == null) throw new BusinessException(404, "找不到此用戶");
-        user.setIsActive(0);
+        user.setIsActive(false);
         userMapper.updateById(user);
     }
 

@@ -21,7 +21,10 @@ public class User {
     private String role;
 
     @TableLogic
-    private Integer isActive;
+    private Boolean isActive;
+
+    /** true = 首次登入強制改密碼；改完設 false */
+    private Boolean mustChangePassword;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

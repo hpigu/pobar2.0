@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/api/axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -49,6 +49,30 @@ const products = ref([])
 const productDialog = ref(false)
 const productForm = ref({ id: null, nameZh: '', nameEn: '', categoryId: null, price: 0, type: 'DRINK', availableFrom: null, availableTo: null })
 const uploadingId = ref(null)
+
+// 品項分頁
+const productPage = ref(1)
+const productPageSize = ref(20)
+const pagedProducts = computed(() => {
+  const start = (productPage.value - 1) * productPageSize.value
+  return products.value.slice(start, start + productPageSize.value)
+})
+watch(products, () => {
+  const max = Math.max(1, Math.ceil(products.value.length / productPageSize.value))
+  if (productPage.value > max) productPage.value = max
+})
+
+// 分類分頁
+const catPage = ref(1)
+const catPageSize = ref(20)
+const pagedCategories = computed(() => {
+  const start = (catPage.value - 1) * catPageSize.value
+  return categories.value.slice(start, start + catPageSize.value)
+})
+watch(categories, () => {
+  const max = Math.max(1, Math.ceil(categories.value.length / catPageSize.value))
+  if (catPage.value > max) catPage.value = max
+})
 
 async function loadProducts() {
   const res = await api.get('/api/menu')
@@ -169,7 +193,7 @@ onMounted(() => { loadCategories(); loadProducts() })
 
 <template>
   <div>
-    <h2 style="margin-bottom:20px">品項管理</h2>
+    <h2 style="margin:0 0 20px">品項管理</h2>
     <el-tabs v-model="activeTab">
 
       <!-- ── 品項 ── -->
@@ -177,7 +201,7 @@ onMounted(() => { loadCategories(); loadProducts() })
         <div style="margin-bottom:12px">
           <el-button type="primary" @click="openProductDialog()">新增品項</el-button>
         </div>
-        <el-table :data="products" border>
+        <el-table :data="pagedProducts" border>
           <el-table-column label="圖片" width="70">
             <template #default="{ row }">
               <el-image v-if="row.imageUrl" :src="row.imageUrl" style="width:40px;height:40px;border-radius:4px" fit="cover" />
@@ -214,6 +238,14 @@ onMounted(() => { loadCategories(); loadProducts() })
             </template>
           </el-table-column>
         </el-table>
+        <el-pagination
+          style="margin-top:16px; justify-content:flex-end"
+          v-model:current-page="productPage"
+          v-model:page-size="productPageSize"
+          :total="products.length"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background />
       </el-tab-pane>
 
       <!-- ── 分類 ── -->
@@ -221,7 +253,7 @@ onMounted(() => { loadCategories(); loadProducts() })
         <div style="margin-bottom:12px">
           <el-button type="primary" @click="openCatDialog()">新增分類</el-button>
         </div>
-        <el-table :data="categories" border>
+        <el-table :data="pagedCategories" border>
           <el-table-column prop="nameZh" label="中文名稱" />
           <el-table-column prop="nameEn" label="英文名稱" />
           <el-table-column prop="displayOrder" label="排序" width="80" />
@@ -232,6 +264,14 @@ onMounted(() => { loadCategories(); loadProducts() })
             </template>
           </el-table-column>
         </el-table>
+        <el-pagination
+          style="margin-top:16px; justify-content:flex-end"
+          v-model:current-page="catPage"
+          v-model:page-size="catPageSize"
+          :total="categories.length"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background />
       </el-tab-pane>
 
     </el-tabs>

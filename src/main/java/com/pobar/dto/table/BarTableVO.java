@@ -12,7 +12,7 @@ public class BarTableVO {
     private Integer capacity;
     private BigDecimal posX;
     private BigDecimal posY;
-    private Integer isLocked;
+    private Boolean isLocked;
 
     // session 資訊（JOIN 而來）
     private String status;          // OPEN | CLOSED

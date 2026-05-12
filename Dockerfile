@@ -16,4 +16,9 @@ COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p uploads/images backups logs
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=docker"]
+
+# Profile 由環境變數 SPRING_PROFILES_ACTIVE 控制（預設 sit）
+# 本機開發請用 mvn spring-boot:run，不需透過 Docker
+ENV SPRING_PROFILES_ACTIVE=sit
+
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]

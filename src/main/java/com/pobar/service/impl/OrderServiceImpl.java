@@ -63,10 +63,10 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderItem> savedItems = request.getItems().stream().map(req -> {
             Product product = productMapper.selectById(req.getProductId());
-            if (product == null || product.getIsActive() == 0) {
+            if (product == null || !Boolean.TRUE.equals(product.getIsActive())) {
                 throw new BusinessException("品項不存在：" + req.getProductId());
             }
-            if (product.getIsAvailable() == 0) {
+            if (!Boolean.TRUE.equals(product.getIsAvailable())) {
                 throw new BusinessException("「" + product.getNameZh() + "」目前售完");
             }
 

@@ -16,8 +16,8 @@ public class BarTable {
     private Integer capacity;
     private BigDecimal posX;
     private BigDecimal posY;
-    private Integer isLocked;
+    private Boolean isLocked;
 
     @TableLogic
-    private Integer isActive;
+    private Boolean isActive;
 }

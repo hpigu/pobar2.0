@@ -8,6 +8,7 @@ import com.pobar.logging.Audit;
 import com.pobar.mapper.IngredientMapper;
 import com.pobar.mapper.ProductMapper;
 import com.pobar.service.IngredientService;
+import com.pobar.util.XssUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,9 @@ public class IngredientServiceImpl implements IngredientService {
     }
 
     @Override
-    @Audit(action = "CREATE_INGREDIENT", entityType = "Ingredient")
+    @Audit(action = "CREATE_INGREDIENT", entityType = "Ingredient",
+            entityIdExpr = "#result?.id",
+            detailExpr = "'name=' + #request.name + ', unit=' + #request.unit + ', category=' + #request.category")
     public IngredientResponse create(IngredientRequest request) {
         Ingredient ingredient = fromRequest(request, new Ingredient());
         ingredientMapper.insert(ingredient);
@@ -35,7 +38,9 @@ public class IngredientServiceImpl implements IngredientService {
     }
 
     @Override
-    @Audit(action = "UPDATE_INGREDIENT", entityType = "Ingredient")
+    @Audit(action = "UPDATE_INGREDIENT", entityType = "Ingredient",
+            entityIdExpr = "#id",
+            detailExpr = "'name=' + #request.name + ', unit=' + #request.unit + ', category=' + #request.category + ', isAvailable=' + #request.isAvailable")
     public IngredientResponse update(Integer id, IngredientRequest request) {
         Ingredient ingredient = requireExists(id);
         fromRequest(request, ingredient);
@@ -45,17 +50,20 @@ public class IngredientServiceImpl implements IngredientService {
 
     @Override
     @Transactional
-    @Audit(action = "SET_INGREDIENT_AVAILABILITY", entityType = "Ingredient")
+    @Audit(action = "SET_INGREDIENT_AVAILABILITY", entityType = "Ingredient",
+            entityIdExpr = "#id",
+            detailExpr = "'available=' + #available")
     public void setAvailable(Integer id, boolean available) {
         Ingredient ingredient = requireExists(id);
-        ingredient.setIsAvailable(available ? 1 : 0);
+        ingredient.setIsAvailable(available);
         ingredientMapper.updateById(ingredient);
         // 食材缺貨時，串聯下架使用該食材的所有品項
-        productMapper.updateAvailabilityByIngredient(id, available ? 1 : 0);
+        productMapper.updateAvailabilityByIngredient(id, available);
     }
 
     @Override
-    @Audit(action = "DELETE_INGREDIENT", entityType = "Ingredient")
+    @Audit(action = "DELETE_INGREDIENT", entityType = "Ingredient",
+            entityIdExpr = "#id")
     public void delete(Integer id) {
         requireExists(id);
         ingredientMapper.deleteById(id);
@@ -68,12 +76,14 @@ public class IngredientServiceImpl implements IngredientService {
     }
 
     private Ingredient fromRequest(IngredientRequest req, Ingredient target) {
-        target.setName(req.getName());
-        target.setUnit(req.getUnit());
+        target.setName(XssUtil.sanitize(req.getName()));
+        target.setUnit(XssUtil.sanitize(req.getUnit()));
+        String category = req.getCategory();
+        target.setCategory(category == null || category.isBlank() ? "OTHER" : category);
         if (req.getIsAvailable() != null) {
-            target.setIsAvailable(req.getIsAvailable() ? 1 : 0);
+            target.setIsAvailable(req.getIsAvailable());
         } else if (target.getIsAvailable() == null) {
-            target.setIsAvailable(1);
+            target.setIsAvailable(true);
         }
         return target;
     }
@@ -83,7 +93,8 @@ public class IngredientServiceImpl implements IngredientService {
         r.setId(i.getId());
         r.setName(i.getName());
         r.setUnit(i.getUnit());
-        r.setIsAvailable(i.getIsAvailable() != null && i.getIsAvailable() == 1);
+        r.setCategory(i.getCategory() == null ? "OTHER" : i.getCategory());
+        r.setIsAvailable(i.getIsAvailable());
         r.setCreatedAt(i.getCreatedAt());
         return r;
     }

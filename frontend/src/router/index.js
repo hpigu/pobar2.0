@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const routes = [
   { path: '/login', component: () => import('@/views/LoginPage.vue'), meta: { public: true } },
+  { path: '/change-password', component: () => import('@/views/ChangePasswordPage.vue') },
   { path: '/order/:token', component: () => import('@/views/CustomerOrderPage.vue'), meta: { public: true } },
   { path: '/reservation', component: () => import('@/views/ReservationPage.vue'), meta: { public: true } },
   { path: '/kitchen', component: () => import('@/views/KitchenDisplayPage.vue'), meta: { roles: ['KITCHEN', 'MANAGER', 'ADMIN'] } },
@@ -21,7 +22,7 @@ const routes = [
       { path: 'menu',        component: () => import('@/views/admin/MenuPage.vue'),         meta: { roles: ['ADMIN', 'MANAGER'] } },
       { path: 'tables',      component: () => import('@/views/admin/TablesPage.vue'),       meta: { roles: ['ADMIN', 'MANAGER'] } },
       { path: 'ingredients', component: () => import('@/views/admin/IngredientsPage.vue'), meta: { roles: ['ADMIN', 'MANAGER'] } },
-{ path: 'settings',    component: () => import('@/views/admin/SettingsPage.vue'),    meta: { roles: ['ADMIN'] } },
+      { path: 'settings',    component: () => import('@/views/admin/SettingsPage.vue'),    meta: { roles: ['ADMIN'] } },
       { path: 'users',       component: () => import('@/views/admin/UsersPage.vue'),       meta: { roles: ['ADMIN'] } },
     ],
   },
@@ -35,7 +36,15 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
-  if (!to.meta.public && !auth.isLoggedIn) return '/login'
+  // 公開頁面直接放行
+  if (to.meta.public) return true
+  // 未登入導向 login
+  if (!auth.isLoggedIn) return '/login'
+  // 強制改密碼狀態，限制只能去 /change-password
+  if (auth.mustChangePassword && to.path !== '/change-password') {
+    return '/change-password'
+  }
+  // 角色檢查
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) return '/login'
 })
 

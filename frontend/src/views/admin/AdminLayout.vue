@@ -14,8 +14,8 @@ async function logout() {
 </script>
 
 <template>
-  <el-container style="min-height:100vh">
-    <el-aside width="200px" style="background:#001529">
+  <el-container style="height:100vh; overflow:hidden">
+    <el-aside width="200px" style="background:#001529; overflow:hidden">
       <div style="padding:20px 16px; color:#fff; font-size:18px; font-weight:700">
         🍹 Pobar 後台
       </div>
@@ -51,7 +51,7 @@ async function logout() {
         <el-button link style="color:#adb5bd" @click="logout">登出</el-button>
       </div>
     </el-aside>
-    <el-main style="background:#f0f2f5; padding:24px">
+    <el-main style="background:#f0f2f5; padding:24px; overflow-y:auto; height:100%">
       <router-view />
     </el-main>
   </el-container>

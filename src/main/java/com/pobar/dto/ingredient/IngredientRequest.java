@@ -12,5 +12,7 @@ public class IngredientRequest {
     @NotBlank
     private String unit;
 
+    private String category;
+
     private Boolean isAvailable;
 }

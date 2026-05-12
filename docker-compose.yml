@@ -1,3 +1,10 @@
+# ═══════════════════════════════════════════════════════════
+# SIT 測試環境（預設）
+# 啟動：docker compose up -d
+#
+# Production 啟動方式：
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ═══════════════════════════════════════════════════════════
 services:
 
   mysql:
@@ -9,9 +16,15 @@ services:
       MYSQL_DATABASE: pobar
       MYSQL_USER: ${DB_USER:-pobar}
       MYSQL_PASSWORD: ${DB_PASSWORD:-pobar_pass}
+    # SIT 預設不對外暴露 MySQL；如需用工具連線，請取消下方註解（僅限本機開發）
+    # ports:
+    #   - "127.0.0.1:3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # 初始化腳本僅在 mysql-data volume 為空時執行一次
+      # sql/init.sql 包含：Schema → 系統設定 → 酒單種子 → 食材/酒譜種子
+      # 若需升級既有資料庫，請改用 sql/migrations/ 下的腳本
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_secret}"]
       interval: 10s
@@ -28,10 +41,29 @@ services:
       mysql:
         condition: service_healthy
     environment:
+      # ─── Profile ───
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-sit}
+      # ─── Database ───
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: pobar
       DB_USER: ${DB_USER:-pobar}
       DB_PASSWORD: ${DB_PASSWORD:-pobar_pass}
-      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_TO_A_RANDOM_64_CHAR_STRING_POBAR_SECRET_KEY_2026}
+      # ─── Security ───
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INIT_ADMIN_ACCOUNT: ${INIT_ADMIN_ACCOUNT:-admin}
       INIT_ADMIN_PASSWORD: ${INIT_ADMIN_PASSWORD:-}
+      # ─── CORS ───
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://sit.pobar.example.com}
+      # ─── ECPay（申請後再填）───
+      ECPAY_MERCHANT_ID: ${ECPAY_MERCHANT_ID:-}
+      ECPAY_HASH_KEY: ${ECPAY_HASH_KEY:-}
+      ECPAY_HASH_IV: ${ECPAY_HASH_IV:-}
+      ECPAY_INVOICE_API_URL: ${ECPAY_INVOICE_API_URL:-https://einvoice-stage.ecpay.com.tw/B2CInvoice/Issue}
+      # ─── Storage（local | s3）───
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      # ─── Log 目錄（logback-spring.xml 會吃這個）───
+      LOG_DIR: /app/logs
     volumes:
       - uploads:/app/uploads
       - backups:/app/backups

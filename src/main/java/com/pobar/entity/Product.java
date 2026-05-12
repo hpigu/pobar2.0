@@ -18,8 +18,9 @@ public class Product {
     private BigDecimal price;
     private String type;
     private String imageUrl;
-    private Integer isActive;
-    private Integer isAvailable;
+    @TableLogic
+    private Boolean isActive;
+    private Boolean isAvailable;
     private LocalDateTime availableFrom;
     private LocalDateTime availableTo;
     private String createdBy;

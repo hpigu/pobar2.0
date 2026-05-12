@@ -36,10 +36,12 @@ public class ReservationController {
         return Result.ok(reservationService.create(request));
     }
 
-    // 顧客以手機號查自己的訂位（public）
+    // 顧客以手機 + 訂位代碼查自己的訂位（public，必須兩者皆提供）
     @GetMapping("/my")
-    public Result<List<ReservationResponse>> listByPhone(@RequestParam String phone) {
-        return Result.ok(reservationService.listByPhone(phone));
+    public Result<List<ReservationResponse>> listByPhoneAndCode(
+            @RequestParam String phone,
+            @RequestParam String code) {
+        return Result.ok(reservationService.listByPhoneAndCode(phone, code));
     }
 
     // 員工查詢指定日期的訂位清單

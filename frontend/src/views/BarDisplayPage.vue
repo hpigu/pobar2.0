@@ -82,8 +82,10 @@ function elapsedMin(createdAt) {
           <span class="table-label">{{ item.tableNames || `Session ${item.sessionId}` }}</span>
           <el-tag :type="statusType(item.status)" size="small">{{ statusLabel(item.status) }}</el-tag>
         </div>
-        <div class="item-name">{{ item.productName }}</div>
-        <div class="item-qty">× {{ item.quantity }}</div>
+        <div class="item-name">
+          {{ item.productName }}
+          <span class="item-qty">× {{ item.quantity }}</span>
+        </div>
         <div v-if="item.ingredientNames" class="item-ingredients">{{ item.ingredientNames }}</div>
         <div v-if="item.notes" class="item-note">📝 {{ item.notes }}</div>
         <div class="item-elapsed">{{ elapsedMin(item.createdAt) }} 分鐘前</div>
@@ -110,9 +112,9 @@ function elapsedMin(createdAt) {
 .order-card.ready { border-left: 4px solid #67c23a !important; }
 .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .table-label { font-weight: 700; font-size: 16px; color: #58a6ff; }
-.item-name { font-size: 20px; font-weight: 700; color: #fff; margin: 4px 0; }
-.item-qty { font-size: 32px; font-weight: 900; color: #58a6ff; }
-.item-ingredients { font-size: 12px; color: #8b949e; margin: 4px 0 2px; line-height: 1.5; }
+.item-name { font-size: 18px; font-weight: 700; color: #fff; margin: 4px 0; }
+.item-qty { font-size: 16px; font-weight: 700; color: #58a6ff; margin-left: 6px; }
+.item-ingredients { font-size: 13px; color: #8b949e; margin: 4px 0 2px; line-height: 1.6; }
 .item-note { font-size: 13px; color: #aaa; margin-top: 4px; }
 .item-elapsed { font-size: 12px; color: #666; margin-top: 4px; }
 .card-actions { margin-top: 12px; }

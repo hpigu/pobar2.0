@@ -14,6 +14,7 @@ public class LoginAttempt {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private String account;
+    private String ip;
     private Integer failCount;
     private LocalDateTime lockedUntil;
     private LocalDateTime updatedAt;
