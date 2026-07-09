@@ -16,6 +16,9 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Spring Boot 3.0.0 pins Lombok 1.18.24, which crashes on JDK 21+.
+             Bumped to a JDK 21/25-compatible release so the project compiles. -->
+        <lombok.version>1.18.38</lombok.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
         <jjwt.version>0.12.3</jjwt.version>
         <bucket4j.version>8.7.0</bucket4j.version>

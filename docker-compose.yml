@@ -50,7 +50,8 @@ services:
       DB_USER: ${DB_USER:-pobar}
       DB_PASSWORD: ${DB_PASSWORD:-pobar_pass}
       # ─── Security ───
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      # 開發/SIT 用預設值，方便 clone 後免 .env 直接啟動；正式環境（docker-compose.prod.yml）維持 :?required 強制外部注入
+      JWT_SECRET: ${JWT_SECRET:-LOCAL_DEV_ONLY_SECRET_DO_NOT_USE_IN_PRODUCTION_POBAR_2026_____}
       INIT_ADMIN_ACCOUNT: ${INIT_ADMIN_ACCOUNT:-admin}
       INIT_ADMIN_PASSWORD: ${INIT_ADMIN_PASSWORD:-}
       # ─── CORS ───
