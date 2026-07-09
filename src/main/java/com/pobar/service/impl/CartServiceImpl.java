@@ -43,6 +43,10 @@ public class CartServiceImpl implements CartService {
         item.setPrice(product.getPrice());
         item.setType(product.getType());
 
+        String notes = com.pobar.util.XssUtil.sanitize(item.getNotes());
+        if (notes != null && notes.length() > 100) notes = notes.substring(0, 100);
+        item.setNotes(notes);
+
         List<CartItem> cart = carts.computeIfAbsent(sessionToken, k -> new ArrayList<>());
         synchronized (cart) {
             cart.add(item);

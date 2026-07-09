@@ -122,7 +122,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 廣播給廚房或吧台更新畫面
-        broadcastDisplayUpdate(item.getType());
+        broadcastByType(item.getType());
 
         return item;
     }
@@ -140,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
         item.setUpdatedAt(LocalDateTime.now());
         orderItemMapper.updateById(item);
 
-        broadcastDisplayUpdate(item.getType());
+        broadcastByType(item.getType());
     }
 
     @Override
@@ -187,13 +187,11 @@ public class OrderServiceImpl implements OrderService {
         boolean hasFood  = items.stream().anyMatch(i -> "FOOD".equals(i.getType()));
         boolean hasDrink = items.stream().anyMatch(i -> "DRINK".equals(i.getType()));
 
-        if (hasFood)  messagingTemplate.convertAndSend("/topic/kitchen",
-                orderItemMapper.selectActiveByType("FOOD"));
-        if (hasDrink) messagingTemplate.convertAndSend("/topic/bar",
-                orderItemMapper.selectActiveByType("DRINK"));
+        if (hasFood)  broadcastByType("FOOD");
+        if (hasDrink) broadcastByType("DRINK");
     }
 
-    private void broadcastDisplayUpdate(String type) {
+    private void broadcastByType(String type) {
         if ("FOOD".equals(type)) {
             messagingTemplate.convertAndSend("/topic/kitchen",
                     orderItemMapper.selectActiveByType("FOOD"));

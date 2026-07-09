@@ -42,6 +42,10 @@ public class LocalStorageService implements StorageService {
     @Value("${storage.local.max-size-mb:5}")
     private long maxSizeMb;
 
+    /** 解碼前的尺寸上限，避免「解壓縮炸彈」（小檔解出巨大點陣圖）造成 OOM */
+    private static final int MAX_IMAGE_DIMENSION = 8000;
+    private static final long MAX_IMAGE_PIXELS = 50_000_000L;
+
     @Override
     public String save(byte[] bytes, String originalFilename, String folder) {
         if (bytes == null || bytes.length == 0) {
@@ -59,6 +63,31 @@ public class LocalStorageService implements StorageService {
         if (!allowed.contains(ext)) {
             throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED,
                     "不支援的檔案類型：" + ext + "，僅允許 " + allowed);
+        }
+
+        // 只讀圖檔 header 取得尺寸並驗證，避免直接 decode 整張點陣圖造成「解壓縮炸彈」OOM
+        try (javax.imageio.stream.ImageInputStream iis =
+                     javax.imageio.ImageIO.createImageInputStream(new java.io.ByteArrayInputStream(bytes))) {
+            java.util.Iterator<javax.imageio.ImageReader> readers =
+                    iis == null ? java.util.Collections.emptyIterator() : javax.imageio.ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
+                throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "檔案內容不是有效的圖片");
+            }
+            javax.imageio.ImageReader reader = readers.next();
+            try {
+                reader.setInput(iis);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION
+                        || (long) width * height > MAX_IMAGE_PIXELS) {
+                    throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED,
+                            "圖片尺寸過大，單邊上限 " + MAX_IMAGE_DIMENSION + "px");
+                }
+            } finally {
+                reader.dispose();
+            }
+        } catch (java.io.IOException e) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "無法解析圖片內容");
         }
 
         String safeFolder = (folder == null || folder.isBlank()) ? "misc" : folder.trim();
