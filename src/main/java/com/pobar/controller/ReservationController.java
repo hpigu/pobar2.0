@@ -4,6 +4,7 @@ import com.pobar.common.Result;
 import com.pobar.dto.reservation.ReservationRequest;
 import com.pobar.dto.reservation.ReservationResponse;
 import com.pobar.dto.reservation.TimeSlotResponse;
+import com.pobar.security.AuthUser;
 import com.pobar.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,12 @@ public class ReservationController {
         return Result.ok(reservationService.listByPhoneAndCode(phone, code));
     }
 
+    // 顧客以手機 + 訂位代碼自助取消（public，用 POST body 避免記錄於 access log）
+    @PostMapping("/cancel")
+    public Result<ReservationResponse> cancel(@RequestBody Map<String, String> body) {
+        return Result.ok(reservationService.cancelByPhoneAndCode(body.get("phone"), body.get("code")));
+    }
+
     // 員工查詢指定日期的訂位清單
     @GetMapping
     @PreAuthorize("hasAnyRole('WAITER','MANAGER','ADMIN')")
@@ -59,7 +66,7 @@ public class ReservationController {
             @PathVariable Integer id,
             @RequestBody Map<String, String> body,
             Authentication auth) {
-        Integer operatorId = (Integer) auth.getPrincipal();
+        Integer operatorId = ((AuthUser) auth.getPrincipal()).id();
         return Result.ok(reservationService.updateStatus(id, body.get("status"), operatorId));
     }
 }

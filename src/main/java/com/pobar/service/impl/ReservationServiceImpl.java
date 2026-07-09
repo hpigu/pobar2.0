@@ -24,7 +24,7 @@ import java.security.SecureRandom;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Set;
 
 import com.pobar.util.XssUtil;
 
@@ -40,6 +40,9 @@ public class ReservationServiceImpl implements ReservationService {
             "ABCDEFGHJKMNPQRSTUVWXYZ23456789".toCharArray();
     private static final int BOOKING_CODE_LENGTH = 8;
     private static final SecureRandom RANDOM = new SecureRandom();
+    /** 訂位狀態白名單，避免任意字串寫入 */
+    private static final Set<String> ALLOWED_STATUSES =
+            Set.of("CONFIRMED", "SEATED", "CANCELLED", "NO_SHOW", "COMPLETED");
 
     private final ReservationMapper reservationMapper;
     private final BarTableMapper barTableMapper;
@@ -57,7 +60,6 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setSeatType("REGULAR");
         reservation.setDurationMinutes(120);
         reservation.setStatus("CONFIRMED");
-        reservation.setCancelToken(UUID.randomUUID().toString());
         reservation.setBookingCode(generateBookingCode());
         reservationMapper.insert(reservation);
         return toResponse(reservation);
@@ -86,6 +88,9 @@ public class ReservationServiceImpl implements ReservationService {
             entityIdExpr = "#id",
             detailExpr = "'status=' + #status + ', operatorId=' + #operatorId")
     public ReservationResponse updateStatus(Integer id, String status, Integer operatorId) {
+        if (!ALLOWED_STATUSES.contains(status)) {
+            throw new BusinessException("不合法的訂位狀態：" + status);
+        }
         Reservation reservation = reservationMapper.selectById(id);
         if (reservation == null) throw new BusinessException(404, "找不到此訂位");
         reservation.setStatus(status);
@@ -141,6 +146,28 @@ public class ReservationServiceImpl implements ReservationService {
         return reservationMapper.selectByPhoneAndCode(phone.trim(), bookingCode.trim().toUpperCase()).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Audit(action = "CANCEL_RESERVATION", entityType = "Reservation", entityIdExpr = "#result?.id",
+            allowAnonymous = true)
+    public ReservationResponse cancelByPhoneAndCode(String phone, String bookingCode) {
+        if (phone == null || phone.isBlank() || bookingCode == null || bookingCode.isBlank()) {
+            throw new BusinessException(400, "請提供電話與訂位代碼");
+        }
+        List<Reservation> matches =
+                reservationMapper.selectByPhoneAndCode(phone.trim(), bookingCode.trim().toUpperCase());
+        if (matches.isEmpty()) {
+            throw new BusinessException(404, "找不到符合的訂位");
+        }
+        Reservation reservation = matches.get(0);
+        if (!"CONFIRMED".equals(reservation.getStatus())) {
+            throw new BusinessException("此訂位無法取消");
+        }
+        reservation.setStatus("CANCELLED");
+        reservation.setCancelledAt(LocalDateTime.now());
+        reservationMapper.updateById(reservation);
+        return toResponse(reservation);
     }
 
     private ReservationResponse toResponse(Reservation r) {

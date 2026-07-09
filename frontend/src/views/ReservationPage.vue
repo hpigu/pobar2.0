@@ -19,6 +19,7 @@ const queryPhone = ref('')
 const queryCode = ref('')
 const queryLoading = ref(false)
 const queryResults = ref([])
+const cancellingId = ref(null)
 const STATUS_LABEL = { CONFIRMED:'已確認', SEATED:'已入座', CANCELLED:'已取消', AUTO_CANCELLED:'逾時取消', NO_SHOW:'未到場', COMPLETED:'已完成' }
 
 // 生成未來7天日期選項
@@ -122,6 +123,22 @@ async function queryMyReservations() {
 function openQueryDialog() {
   queryPhone.value = ''; queryCode.value = ''; queryResults.value = []
   queryDialog.value = true
+}
+
+async function cancelReservation(r) {
+  cancellingId.value = r.id
+  try {
+    await api.post('/api/reservations/cancel', {
+      phone: queryPhone.value,
+      code: queryCode.value.trim().toUpperCase(),
+    })
+    ElMessage.success('訂位已取消')
+    await queryMyReservations()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '取消失敗，請稍後再試')
+  } finally {
+    cancellingId.value = null
+  }
 }
 
 function reset() {
@@ -359,6 +376,13 @@ function reset() {
                     :style="{ color: r.status === 'CONFIRMED' ? 'var(--moon)' : r.status === 'CANCELLED' ? 'var(--danger)' : 'var(--fg-2)' }">
                     {{ STATUS_LABEL[r.status] || r.status }}
                   </div>
+                </div>
+                <div v-if="r.status === 'CONFIRMED'" style="margin-top:12px; text-align:right;">
+                  <button class="sp-btn-ghost" style="font-size:10px; padding:8px 16px;"
+                    :disabled="cancellingId === r.id"
+                    @click="cancelReservation(r)">
+                    {{ cancellingId === r.id ? '取消中...' : '取消訂位' }}
+                  </button>
                 </div>
               </div>
             </div>

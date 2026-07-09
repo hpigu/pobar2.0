@@ -130,7 +130,7 @@ com.pobar
 | `/table` | 點餐頁 | QR token 驗證、購物車、送出訂單 |
 | `/table/orders` | 本桌訂單紀錄 | 查看已點品項與狀態 |
 | `/reservation` | 訂位頁 | 填表、選座位類型與人數 |
-| `/reservation/cancel` | 取消訂位頁 | 透過 cancel_token 取消 |
+| `/reservation/cancel` | 取消訂位頁 | 透過手機 + 訂位代碼取消 |
 
 ### 員工端（需登入）
 

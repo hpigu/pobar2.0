@@ -74,7 +74,7 @@ erDiagram
         datetime reserved_at
         int duration_minutes "預設 120"
         varchar status "CONFIRMED,CANCELLED,AUTO_CANCELLED,NO_SHOW,COMPLETED"
-        varchar cancel_token "線上取消用的唯一 UUID"
+        varchar booking_code "顧客查詢用 8 位代碼（手機+代碼可查詢/取消）"
         int assigned_table_id FK "服務生分配，nullable"
         text notes
         datetime created_at

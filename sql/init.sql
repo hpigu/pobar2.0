@@ -129,8 +129,7 @@ CREATE TABLE IF NOT EXISTS `reservation` (
     `duration_minutes` INT         NOT NULL DEFAULT 120,
     `status`           VARCHAR(20) NOT NULL DEFAULT 'CONFIRMED'
                        COMMENT 'CONFIRMED, CANCELLED, AUTO_CANCELLED, NO_SHOW, COMPLETED',
-    `cancel_token`     VARCHAR(36) NOT NULL UNIQUE COMMENT 'UUID，線上取消用',
-    `booking_code`     VARCHAR(10) NOT NULL DEFAULT '' COMMENT '顧客查詢用 8 位代碼',
+    `booking_code`     VARCHAR(10) NOT NULL DEFAULT '' COMMENT '顧客查詢用 8 位代碼（手機+代碼可查詢/取消）',
     `assigned_table_id` INT,
     `notes`            TEXT,
     `created_at`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -138,7 +137,6 @@ CREATE TABLE IF NOT EXISTS `reservation` (
     PRIMARY KEY (`id`),
     INDEX `idx_reserved_at` (`reserved_at`),
     INDEX `idx_status` (`status`),
-    INDEX `idx_cancel_token` (`cancel_token`),
     INDEX `idx_phone_code` (`customer_phone`, `booking_code`),
     FOREIGN KEY (`assigned_table_id`) REFERENCES `bar_table`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客人線上訂位紀錄';

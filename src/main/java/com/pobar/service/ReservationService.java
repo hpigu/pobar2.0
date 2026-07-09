@@ -21,4 +21,7 @@ public interface ReservationService {
 
     /** 顧客查詢：必須同時提供電話與訂位代碼（避免電話被列舉）。 */
     List<ReservationResponse> listByPhoneAndCode(String phone, String bookingCode);
+
+    /** 顧客自助取消：以手機 + 訂位代碼驗證身分，僅 CONFIRMED 狀態可取消。 */
+    ReservationResponse cancelByPhoneAndCode(String phone, String bookingCode);
 }

@@ -18,7 +18,6 @@ public class Reservation {
     private LocalDateTime reservedAt;
     private Integer durationMinutes;    // 預設 120
     private String status;              // CONFIRMED, SEATED, CANCELLED, NO_SHOW, COMPLETED
-    private String cancelToken;         // UUID，顧客線上取消用
     private String bookingCode;         // 8 位英數，顧客查詢用（搭配電話）
     private Integer assignedTableId;
     private String notes;
