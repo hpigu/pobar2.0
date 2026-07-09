@@ -5,6 +5,9 @@ import com.pobar.dto.auth.ChangePasswordRequest;
 import com.pobar.dto.auth.LoginRequest;
 import com.pobar.dto.auth.LoginResponse;
 import com.pobar.dto.auth.RefreshRequest;
+import com.pobar.security.AuthTokens;
+import com.pobar.security.AuthUser;
+import com.pobar.security.ClientIpResolver;
 import com.pobar.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -37,8 +40,7 @@ public class AuthController {
     @PostMapping("/logout")
     public Result<?> logout(@RequestHeader(value = "Authorization", required = false) String authHeader,
                             @RequestBody(required = false) RefreshRequest request) {
-        String accessToken = (authHeader != null && authHeader.startsWith("Bearer "))
-                ? authHeader.substring(7) : null;
+        String accessToken = AuthTokens.extractBearer(authHeader);
         String refreshToken = request != null ? request.getRefreshToken() : null;
         authService.logout(accessToken, refreshToken);
         return Result.ok();
@@ -49,9 +51,8 @@ public class AuthController {
                                                 @RequestHeader(value = "Authorization", required = false) String authHeader,
                                                 HttpServletRequest httpRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Integer userId = (Integer) auth.getPrincipal();
-        String oldToken = (authHeader != null && authHeader.startsWith("Bearer "))
-                ? authHeader.substring(7) : null;
+        Integer userId = ((AuthUser) auth.getPrincipal()).id();
+        String oldToken = AuthTokens.extractBearer(authHeader);
         return Result.ok(authService.changePassword(userId, request, oldToken,
                 getClientIp(httpRequest), getUserAgent(httpRequest)));
     }
@@ -59,19 +60,16 @@ public class AuthController {
     @GetMapping("/me")
     public Result<?> me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        AuthUser u = (AuthUser) auth.getPrincipal();
         return Result.ok(java.util.Map.of(
-                "userId", auth.getPrincipal(),
-                "account", auth.getName(),
-                "role", auth.getDetails() == null ? null : auth.getDetails().toString()
+                "userId", u.id(),
+                "account", u.account(),
+                "role", u.role()
         ));
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIpResolver.resolve(request);
     }
 
     private String getUserAgent(HttpServletRequest request) {

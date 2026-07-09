@@ -2,6 +2,8 @@ package com.pobar.logging;
 
 import com.pobar.entity.AuditLog;
 import com.pobar.mapper.AuditLogMapper;
+import com.pobar.security.AuthUser;
+import com.pobar.security.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,16 +57,16 @@ public class AuditAspect {
         Integer userId = null;
         String account = null;
         String role = null;
-        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof Integer pid) {
-            userId = pid;
-            account = auth.getName();
-            role = auth.getDetails() != null ? auth.getDetails().toString() : null;
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof AuthUser au) {
+            userId = au.id();
+            account = au.account();
+            role = au.role();
         }
 
         // 後台才記錄：未登入即不寫入（避免客戶端 API 灌爆 log）
-        // LOGIN 動作例外：登入流程本身在驗證前是匿名，但需要記錄成敗。
+        // 例外：LOGIN（驗證前為匿名但需記錄成敗）、以及標記 allowAnonymous 的公開端點（例如顧客自助取消訂位）。
         boolean isLoginAction = "LOGIN".equals(annotation.action());
-        if (userId == null && !isLoginAction) {
+        if (userId == null && !isLoginAction && !annotation.allowAnonymous()) {
             return joinPoint.proceed();
         }
 
@@ -160,11 +162,7 @@ public class AuditAspect {
                     (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attrs == null) return "unknown";
             HttpServletRequest request = attrs.getRequest();
-            String forwarded = request.getHeader("X-Forwarded-For");
-            if (forwarded != null && !forwarded.isBlank()) {
-                return forwarded.split(",")[0].trim();
-            }
-            return request.getRemoteAddr();
+            return ClientIpResolver.resolve(request);
         } catch (Exception e) {
             return "unknown";
         }

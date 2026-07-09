@@ -31,4 +31,7 @@ public @interface Audit {
 
     /** SpEL：產生 detail 摘要。可為空。 */
     String detailExpr() default "";
+
+    /** true 時即使匿名（未登入的公開端點）也會寫入 audit_log，例如顧客自助取消訂位。 */
+    boolean allowAnonymous() default false;
 }

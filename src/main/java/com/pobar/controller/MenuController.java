@@ -10,6 +10,7 @@ import com.pobar.dto.menu.RecipeResponse;
 import com.pobar.dto.menu.RecipeSaveRequest;
 import com.pobar.entity.Category;
 import com.pobar.mapper.RecipeMapper;
+import com.pobar.security.AuthUser;
 import com.pobar.service.MenuService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,7 @@ public class MenuController {
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
     public Result<ProductResponse> createProduct(@Valid @RequestBody ProductSaveRequest request,
                                                  Authentication auth) {
-        String account = String.valueOf(auth.getDetails());
+        String account = ((AuthUser) auth.getPrincipal()).account();
         return Result.ok(ProductResponse.from(menuService.createProduct(request, account)));
     }
 

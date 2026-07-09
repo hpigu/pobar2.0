@@ -7,6 +7,7 @@ import com.pobar.dto.table.OpenSessionRequest;
 import com.pobar.dto.table.TableSessionPublicView;
 import com.pobar.dto.table.TableSessionResponse;
 import com.pobar.entity.BarTable;
+import com.pobar.security.AuthUser;
 import com.pobar.service.TableService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +56,7 @@ public class TableController {
     @PreAuthorize("hasAnyRole('WAITER','MANAGER','ADMIN')")
     public Result<TableSessionResponse> openSession(@Valid @RequestBody OpenSessionRequest request,
                                                      Authentication auth) {
-        Integer userId = (Integer) auth.getPrincipal();
+        Integer userId = ((AuthUser) auth.getPrincipal()).id();
         return Result.ok(TableSessionResponse.from(tableService.openSession(request, userId)));
     }
 

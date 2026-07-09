@@ -4,6 +4,7 @@ import com.pobar.common.Result;
 import com.pobar.dto.order.OrderItemDisplay;
 import com.pobar.dto.order.SubmitOrderRequest;
 import com.pobar.entity.OrderItem;
+import com.pobar.security.AuthUser;
 import com.pobar.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -56,7 +57,7 @@ public class OrderController {
     public Result<OrderItem> updateStatus(@PathVariable Integer itemId,
                                            @RequestBody Map<String, String> body,
                                            Authentication auth) {
-        String role = auth.getDetails().toString();
+        String role = ((AuthUser) auth.getPrincipal()).role();
         return Result.ok(orderService.updateStatus(itemId, body.get("status"), role));
     }
 
@@ -64,7 +65,7 @@ public class OrderController {
     @DeleteMapping("/orders/items/{itemId}")
     @PreAuthorize("hasAnyRole('WAITER','MANAGER','ADMIN')")
     public Result<?> cancelItem(@PathVariable Integer itemId, Authentication auth) {
-        Integer userId = (Integer) auth.getPrincipal();
+        Integer userId = ((AuthUser) auth.getPrincipal()).id();
         orderService.cancelItem(itemId, userId);
         return Result.ok();
     }
@@ -75,7 +76,7 @@ public class OrderController {
     public Result<OrderItem> updateItem(@PathVariable Integer itemId,
                                          @RequestBody UpdateItemRequest request,
                                          Authentication auth) {
-        Integer userId = (Integer) auth.getPrincipal();
+        Integer userId = ((AuthUser) auth.getPrincipal()).id();
         return Result.ok(orderService.updateItem(itemId, request.getNotes(), request.getQuantity(), userId));
     }
 

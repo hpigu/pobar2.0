@@ -81,6 +81,10 @@ public class JwtUtil {
         return parse(token).get("role", String.class);
     }
 
+    public String getAccount(String token) {
+        return parse(token).get("account", String.class);
+    }
+
     /** mcp = must change password */
     public boolean mustChangePassword(String token) {
         Boolean v = parse(token).get("mcp", Boolean.class);

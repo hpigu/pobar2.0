@@ -4,6 +4,7 @@ import com.pobar.common.Result;
 import com.pobar.dto.payment.CheckoutRequest;
 import com.pobar.dto.payment.CheckoutResponse;
 import com.pobar.dto.payment.PaymentPreviewResponse;
+import com.pobar.security.AuthUser;
 import com.pobar.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,6 @@ public class PaymentController {
             @PathVariable Integer sessionId,
             @Valid @RequestBody CheckoutRequest request,
             Authentication auth) {
-        return Result.ok(paymentService.checkout(sessionId, request, (Integer) auth.getPrincipal()));
+        return Result.ok(paymentService.checkout(sessionId, request, ((AuthUser) auth.getPrincipal()).id()));
     }
 }

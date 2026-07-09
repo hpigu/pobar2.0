@@ -42,14 +42,12 @@ public class SecurityConfig {
                 // 公開端點（客人端）
                 .requestMatchers(HttpMethod.GET,  "/api/menu/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/api/attributes/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/tables/sessions/{token}").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/orders/session").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/api/orders/session/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/reservations").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/slots").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/api/reservations/cancel").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/reservations/cancel").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/availability").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/my").permitAll()
                 // 顧客購物車（無需登入）

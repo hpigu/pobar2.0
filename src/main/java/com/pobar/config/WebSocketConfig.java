@@ -2,6 +2,8 @@ package com.pobar.config;
 
 import com.pobar.entity.User;
 import com.pobar.mapper.JwtBlacklistMapper;
+import com.pobar.security.AuthTokens;
+import com.pobar.security.AuthUser;
 import com.pobar.security.JwtUtil;
 import com.pobar.service.TableService;
 import lombok.extern.slf4j.Slf4j;
@@ -71,17 +73,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
                     // CONNECT 階段：有帶 JWT 就建立認證；沒有也放行（顧客匿名 OK）
                     String auth = accessor.getFirstNativeHeader("Authorization");
-                    String token = (auth != null && auth.startsWith("Bearer ")) ? auth.substring(7) : null;
+                    String token = AuthTokens.extractBearer(auth);
                     if (token != null && jwtUtil.isValid(token)
                             && !jwtBlacklistMapper.existsByTokenHash(User.hashToken(token))
                             && !jwtUtil.mustChangePassword(token)) {
                         int userId = jwtUtil.getUserId(token);
+                        String account = jwtUtil.getAccount(token);
                         String role = jwtUtil.getRole(token);
                         UsernamePasswordAuthenticationToken springAuth =
                                 new UsernamePasswordAuthenticationToken(
-                                        userId, null,
+                                        new AuthUser(userId, account, role), null,
                                         List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-                        springAuth.setDetails(role);
                         accessor.setUser(springAuth);
                     }
                 }

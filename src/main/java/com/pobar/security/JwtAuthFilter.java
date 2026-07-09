@@ -13,7 +13,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -48,14 +47,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             int userId = jwtUtil.getUserId(token);
+            String account = jwtUtil.getAccount(token);
             String role = jwtUtil.getRole(token);
 
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    userId,
+                    new AuthUser(userId, account, role),
                     null,
                     List.of(new SimpleGrantedAuthority("ROLE_" + role))
             );
-            auth.setDetails(role);
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
@@ -63,11 +62,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private String extractToken(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
-        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
-            return header.substring(7);
-        }
-        return null;
+        return AuthTokens.extractBearer(request.getHeader("Authorization"));
     }
 
     private boolean isBlacklisted(String token) {

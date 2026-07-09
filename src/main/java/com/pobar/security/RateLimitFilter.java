@@ -48,7 +48,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String ip = getClientIp(request);
+        String ip = ClientIpResolver.resolve(request);
         String method = request.getMethod();
 
         Bucket bucket = pickBucket(ip, path, method);
@@ -98,16 +98,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private boolean isCheckout(String path, String method) {
-        if (!"POST".equals(method)) return false;
-        return path.startsWith("/api/payments/")
-                || path.equals("/api/payments");
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return "POST".equals(method)
+                && path.startsWith("/api/sessions/") && path.endsWith("/payment");
     }
 }
