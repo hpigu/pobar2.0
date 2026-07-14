@@ -25,7 +25,11 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost',
-    video: 'on',               // ← 核心：每個測試都錄影
+    // 明確指定錄影尺寸＝viewport（1280×720）。
+    // 預設 video:'on' 會把畫面縮到最長邊 800px（→800×450）而變糊，
+    // 指定 size 後以全解析度錄，文字清晰可讀。
+    viewport: { width: 1280, height: 720 },
+    video: { mode: 'on', size: { width: 1280, height: 720 } },
     trace: 'on',               // 逐步操作追蹤（含截圖、DOM 快照）
     screenshot: 'only-on-failure',
     actionTimeout: 15_000,
