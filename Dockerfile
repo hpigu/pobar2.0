@@ -8,7 +8,8 @@ COPY src ./src
 RUN mvn package -DskipTests -q
 
 # ── Stage 2: Runtime ─────────────────────────────────────
-FROM eclipse-temurin:17-jre-alpine
+# 註：不使用 -jre-alpine，該變體在 arm64（Apple Silicon）無對應 manifest
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
