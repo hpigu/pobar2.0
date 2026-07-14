@@ -91,7 +91,7 @@ public class MenuController {
     }
 
     @PostMapping("/menu")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<ProductResponse> createProduct(@Valid @RequestBody ProductSaveRequest request,
                                                  Authentication auth) {
         String account = ((AuthUser) auth.getPrincipal()).account();
@@ -99,14 +99,14 @@ public class MenuController {
     }
 
     @PutMapping("/menu/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<ProductResponse> updateProduct(@PathVariable Integer id,
                                                  @Valid @RequestBody ProductSaveRequest request) {
         return Result.ok(ProductResponse.from(menuService.updateProduct(id, request)));
     }
 
     @PutMapping("/menu/{id}/availability")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<?> toggleAvailability(@PathVariable Integer id,
                                          @RequestParam boolean available) {
         menuService.toggleAvailability(id, available);
@@ -121,30 +121,30 @@ public class MenuController {
     }
 
     @PostMapping("/menu/{id}/image")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','BARTENDER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<String> uploadImage(@PathVariable Integer id,
                                        @RequestParam MultipartFile file) throws IOException {
         String url = menuService.saveImage(id, file.getBytes(), file.getOriginalFilename());
         return Result.ok(url);
     }
 
-    // ─── 酒譜（調酒師以上才能讀取）─────────────────────
+    // ─── 酒譜（店長／管理員才能讀寫）─────────────────────
 
     @GetMapping("/menu/{productId}/recipe")
-    @PreAuthorize("hasAnyRole('BARTENDER','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<RecipeResponse> getRecipe(@PathVariable Integer productId) {
         return Result.ok(RecipeResponse.from(menuService.getRecipe(productId)));
     }
 
     @PostMapping("/menu/{productId}/recipe")
-    @PreAuthorize("hasAnyRole('BARTENDER','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<RecipeResponse> saveRecipe(@PathVariable Integer productId,
                                               @Valid @RequestBody RecipeSaveRequest request) {
         return Result.ok(RecipeResponse.from(menuService.saveRecipe(productId, request)));
     }
 
     @GetMapping("/menu/{productId}/recipe-detail")
-    @PreAuthorize("hasAnyRole('BARTENDER','MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public Result<RecipeDetailDto> getRecipeDetail(@PathVariable Integer productId) {
         return Result.ok(menuService.getRecipeDetail(productId));
     }
