@@ -86,3 +86,16 @@ export async function forceZhTW(page) {
     localStorage.setItem('lang', 'zh-TW')
   })
 }
+
+/**
+ * 逐字輸入文字（像真人打字），讓錄影看得清楚。
+ * 相對於 fill() 的瞬間填入，這裡用 pressSequentially 帶延遲。
+ * 想加速時設環境變數 SLOWMO=0，打字延遲也一併歸零。
+ * @param {import('@playwright/test').Locator} locator
+ * @param {string} text
+ */
+export async function typeSlowly(locator, text) {
+  const delay = Number(process.env.SLOWMO ?? 800) > 0 ? 60 : 0
+  await locator.click()
+  await locator.pressSequentially(text, { delay })
+}

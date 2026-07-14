@@ -26,8 +26,13 @@ export default defineConfig({
     video: 'on',               // ← 核心：每個測試都錄影
     trace: 'on',               // 逐步操作追蹤（含截圖、DOM 快照）
     screenshot: 'only-on-failure',
-    actionTimeout: 10_000,
+    actionTimeout: 15_000,     // slowMo 會拉長單一動作耗時，放寬逾時
     navigationTimeout: 15_000,
+    // 每個操作（點擊、輸入…）間插入停頓，讓錄影看得清楚。
+    // 想加快回歸驗證時，設環境變數 SLOWMO=0 即可關閉。
+    launchOptions: {
+      slowMo: Number(process.env.SLOWMO ?? 800),
+    },
   },
 
   projects: [

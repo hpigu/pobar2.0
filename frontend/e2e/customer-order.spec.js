@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { openTableSession, closeTableSession, forceZhTW } from './helpers.js'
+import { openTableSession, closeTableSession, forceZhTW, typeSlowly } from './helpers.js'
+import { installCursor } from './cursor.js'
 
 /**
  * 顧客點餐流程（C4）
@@ -26,6 +27,7 @@ test.describe('顧客點餐流程', () => {
 
   test('掃碼進入菜單 → 加入購物車（含備註）→ 送出訂單', async ({ page }) => {
     await forceZhTW(page)
+    await installCursor(page)   // 錄影用假游標 + 點擊漣漪
 
     // 1. 掃碼進入點餐頁
     await page.goto(`/order/${qrToken}`)
@@ -44,8 +46,8 @@ test.describe('顧客點餐流程', () => {
     const modal = page.locator('.sp-modal')
     await expect(modal).toBeVisible()
 
-    // 3. 填備註 + 增加數量到 2
-    await modal.locator('.sp-textarea').fill('少冰、不要吸管')
+    // 3. 填備註（逐字輸入，錄影看得清楚）+ 增加數量到 2
+    await typeSlowly(modal.locator('.sp-textarea'), '少冰、不要吸管')
     await modal.locator('.sp-qty-btn', { hasText: '+' }).click()
 
     // 4. 加入購物車（按鈕文字含「加入 · NT$」）
