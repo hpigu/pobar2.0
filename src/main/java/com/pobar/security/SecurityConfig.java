@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/orders/session").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/reservations").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/slots").permitAll()
+                .requestMatchers(HttpMethod.GET,  "/api/reservations/config").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/reservations/cancel").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/availability").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/reservations/my").permitAll()

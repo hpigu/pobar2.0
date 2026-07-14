@@ -257,6 +257,8 @@ erDiagram
 |---|---|---|
 | `service_charge_rate` | `0.10` | 服務費率 |
 | `reservation_duration_minutes` | `120` | 每次訂位佔用時長 |
+| `reservation_max_advance_days` | `10` | 最多可提前幾天訂位 |
+| `bar_counter_max_party` | `3` | 吧台單組訂位人數上限（4 位以上須訂一般座位） |
 | `no_show_cancel_minutes` | `10` | 逾時自動取消分鐘數 |
 | `business_day_reset_hour` | `4` | 換日時間（凌晨 4 點） |
 | `food_service_start` | `17:00` | 廚房開始服務時間 |

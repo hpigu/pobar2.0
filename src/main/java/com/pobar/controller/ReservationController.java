@@ -1,6 +1,7 @@
 package com.pobar.controller;
 
 import com.pobar.common.Result;
+import com.pobar.dto.reservation.ReservationConfigResponse;
 import com.pobar.dto.reservation.ReservationRequest;
 import com.pobar.dto.reservation.ReservationResponse;
 import com.pobar.dto.reservation.TimeSlotResponse;
@@ -24,11 +25,19 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    // 顧客查詢可用時段（public）
+    // 顧客查詢可用時段（public）：可訂性依人數與座位區計算
     @GetMapping("/slots")
     public Result<List<TimeSlotResponse>> getSlots(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return Result.ok(reservationService.getSlots(date));
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(defaultValue = "2") Integer partySize,
+            @RequestParam(defaultValue = "REGULAR") String seatType) {
+        return Result.ok(reservationService.getSlots(date, partySize, seatType));
+    }
+
+    // 訂位頁設定（public）：座位區人數上限、可提前天數
+    @GetMapping("/config")
+    public Result<ReservationConfigResponse> getConfig() {
+        return Result.ok(reservationService.getConfig());
     }
 
     // 顧客自行預約（public）

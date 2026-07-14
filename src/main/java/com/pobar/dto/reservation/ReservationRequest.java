@@ -20,6 +20,10 @@ public class ReservationRequest {
     @Max(50)
     private Integer partySize;
 
+    /** 座位區：REGULAR（一般桌）或 BAR_COUNTER（吧台），null 視為 REGULAR */
+    @Pattern(regexp = "^(REGULAR|BAR_COUNTER)$", message = "座位類型不正確")
+    private String seatType;
+
     @NotNull
     @Future(message = "預約時間必須為未來時間")
     private LocalDateTime reservedAt;

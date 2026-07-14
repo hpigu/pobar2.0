@@ -108,12 +108,19 @@ GET /api/menu
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| POST | `/api/reservations` | 新增訂位 | Public |
-| GET | `/api/reservations/cancel?token=` | 透過 token 取消訂位 | Public |
-| GET | `/api/reservations` | 查詢訂位清單（可篩選日期） | WAITER+ |
-| PUT | `/api/reservations/{id}/assign` | 分配桌位 | WAITER+ |
-| PUT | `/api/reservations/{id}/status` | 更新狀態（NO_SHOW / COMPLETED） | WAITER+ |
-| GET | `/api/reservations/availability` | 查詢特定日期時段可訂位狀態 | Public |
+| POST | `/api/reservations` | 新增訂位（交易內鎖桌驗證容量，防超訂） | Public |
+| GET | `/api/reservations/slots?date=&partySize=&seatType=` | 查詢時段可訂性（依人數 + 座位區計算） | Public |
+| GET | `/api/reservations/config` | 訂位頁設定（座位區人數上限、可提前天數） | Public |
+| GET | `/api/reservations/my?phone=&code=` | 顧客查詢自己的訂位（手機 + 訂位代碼） | Public |
+| POST | `/api/reservations/cancel` | 顧客自助取消（body 帶手機 + 訂位代碼） | Public |
+| GET | `/api/reservations?date=` | 查詢訂位清單（篩選日期） | WAITER+ |
+| PATCH | `/api/reservations/{id}/status` | 更新狀態（SEATED / CANCELLED / NO_SHOW / COMPLETED） | WAITER+ |
+
+**防超訂規則**：一般座位（REGULAR）不併桌，每組需一張 `capacity ≥ partySize` 的桌子，
+以 best-fit decreasing 裝箱檢查該時段（依各訂位自身 `duration_minutes` 判斷區間重疊）是否仍有可行桌位組合；
+吧台（BAR_COUNTER）為座位池，時段內人數加總不得超過吧台總座位數，且單組上限 `bar_counter_max_party`（預設 3）。
+鎖定（`is_locked`）或停用的桌位不列入可訂容量。建立訂位時整段包在交易內，
+先 `SELECT ... FOR UPDATE` 鎖住可訂桌位再檢查 + 寫入，杜絕並發超訂。
 
 ---
 

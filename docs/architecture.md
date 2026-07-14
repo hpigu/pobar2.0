@@ -98,7 +98,7 @@ com.pobar
 │   ├── AttributeController     維度類型 + 選項 CRUD
 │   ├── IngredientController    食材 CRUD、缺貨標記
 │   ├── RecipeController        酒譜 CRUD
-│   ├── ReservationController   訂位 CRUD、自動取消
+│   ├── ReservationController   訂位 CRUD、時段可訂性、防超訂、自動取消
 │   ├── PaymentController       結帳、分帳計算
 │   ├── InvoiceController       綠界電子發票串接
 │   ├── ReportController        報表資料 API

@@ -11,6 +11,8 @@ public class ReservationResponse {
     private String customerName;
     private String customerPhone;
     private Integer partySize;
+    /** 座位區：REGULAR / BAR_COUNTER */
+    private String seatType;
     private LocalDateTime reservedAt;
     private String notes;
     private String status;

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/api/axios'
 import { ElMessage } from 'element-plus'
 
@@ -7,6 +7,11 @@ const selectedDate = ref(null)   // 'YYYY-MM-DD'
 const selectedTime = ref(null)   // 'HH:mm'
 const slots = ref([])
 const loadingSlots = ref(false)
+
+// 訂位設定（座位區人數上限、可提前天數），由後端提供
+const config = ref({ regularMaxPartySize: 6, barCounterMaxPartySize: 3, maxAdvanceDays: 10 })
+const seatType = ref('REGULAR')  // REGULAR | BAR_COUNTER
+const SEAT_LABEL = { REGULAR: '一般座位', BAR_COUNTER: '吧台' }
 
 const form = ref({ customerName: '', customerPhone: '', partySize: 2, notes: '' })
 const submitting = ref(false)
@@ -22,12 +27,12 @@ const queryResults = ref([])
 const cancellingId = ref(null)
 const STATUS_LABEL = { CONFIRMED:'已確認', SEATED:'已入座', CANCELLED:'已取消', AUTO_CANCELLED:'逾時取消', NO_SHOW:'未到場', COMPLETED:'已完成' }
 
-// 生成未來7天日期選項
+// 依可提前天數生成日期選項（今天 ~ 今天 + maxAdvanceDays）
 const dateOptions = computed(() => {
   const days = ['SUN','MON','TUE','WED','THU','FRI','SAT']
   const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
   const result = []
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i <= (config.value.maxAdvanceDays || 10); i++) {
     const d = new Date(); d.setDate(d.getDate() + i)
     const yyyy = d.getFullYear()
     const mm = String(d.getMonth() + 1).padStart(2, '0')
@@ -42,12 +47,31 @@ const dateOptions = computed(() => {
   return result
 })
 
-async function selectDate(val) {
-  selectedDate.value = val
+// 座位區的人數上限（吧台預設最多 3 位；一般桌上限 = 最大單桌容量，不併桌）
+const maxPartySize = computed(() => {
+  const max = seatType.value === 'BAR_COUNTER'
+    ? config.value.barCounterMaxPartySize
+    : config.value.regularMaxPartySize
+  return Math.max(1, max || 1)
+})
+const partyOptions = computed(() =>
+  Array.from({ length: maxPartySize.value }, (_, i) => i + 1))
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/api/reservations/config')
+    if (res.data?.data) config.value = res.data.data
+  } catch { /* 取不到就用預設值，後端仍會擋 */ }
+})
+
+async function refreshSlots() {
+  if (!selectedDate.value) return
   selectedTime.value = null
   loadingSlots.value = true
   try {
-    const res = await api.get(`/api/reservations/slots?date=${val}`)
+    const res = await api.get('/api/reservations/slots', {
+      params: { date: selectedDate.value, partySize: form.value.partySize, seatType: seatType.value }
+    })
     slots.value = res.data.data || []
   } catch {
     ElMessage.error('載入時段失敗')
@@ -55,6 +79,18 @@ async function selectDate(val) {
     loadingSlots.value = false
   }
 }
+
+function selectDate(val) {
+  selectedDate.value = val
+  refreshSlots()
+}
+
+// 換座位區 / 人數時：夾住人數上限並重新計算各時段可訂性
+watch(seatType, () => {
+  if (form.value.partySize > maxPartySize.value) form.value.partySize = maxPartySize.value
+  refreshSlots()
+})
+watch(() => form.value.partySize, refreshSlots)
 
 function isPastSlot(time) {
   if (!selectedDate.value) return false
@@ -91,6 +127,7 @@ async function submit() {
       customerName:  form.value.customerName,
       customerPhone: form.value.customerPhone,
       partySize:     form.value.partySize,
+      seatType:      seatType.value,
       notes:         form.value.notes,
       reservedAt:    reservedAtIso.value,
     })
@@ -143,7 +180,8 @@ async function cancelReservation(r) {
 
 function reset() {
   success.value = false; selectedDate.value = null; selectedTime.value = null
-  slots.value = []; form.value = { customerName: '', customerPhone: '', partySize: 2, notes: '' }
+  slots.value = []; seatType.value = 'REGULAR'
+  form.value = { customerName: '', customerPhone: '', partySize: 2, notes: '' }
 }
 </script>
 
@@ -170,6 +208,10 @@ function reset() {
             <div style="display:flex; justify-content:space-between;">
               <span style="color:var(--fg-2); font-size:13px;">訂位人</span>
               <span class="display" style="font-size:15px;">{{ form.customerName }} · {{ form.partySize }} 位</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--fg-2); font-size:13px;">座位區</span>
+              <span class="display" style="font-size:15px;">{{ SEAT_LABEL[seatType] }}</span>
             </div>
           </div>
         </div>
@@ -259,20 +301,39 @@ function reset() {
           </div>
         </div>
 
-        <!-- ② Party size -->
+        <!-- ② Seat area -->
         <div class="res-field-group">
-          <div class="res-step-label">② PARTY · 用餐人數</div>
+          <div class="res-step-label">② SEAT · 座位區</div>
           <div style="display:flex; gap:6px;">
-            <div v-for="n in [1,2,3,4,5,6]" :key="n"
+            <div class="display res-party-btn" style="font-size:15px;"
+              :class="{ active: seatType === 'REGULAR' }"
+              @click="seatType = 'REGULAR'">一般座位</div>
+            <div v-if="config.barCounterMaxPartySize > 0"
+              class="display res-party-btn" style="font-size:15px;"
+              :class="{ active: seatType === 'BAR_COUNTER' }"
+              @click="seatType = 'BAR_COUNTER'">
+              吧台
+              <span class="num" style="display:block; font-size:8px; letter-spacing:0.15em; margin-top:2px; color:var(--fg-2);">
+                MAX {{ config.barCounterMaxPartySize }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ Party size -->
+        <div class="res-field-group">
+          <div class="res-step-label">③ PARTY · 用餐人數</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <div v-for="n in partyOptions" :key="n"
               class="display res-party-btn"
               :class="{ active: form.partySize === n }"
               @click="form.partySize = n">{{ n }}</div>
           </div>
         </div>
 
-        <!-- ③ Time slots -->
+        <!-- ④ Time slots -->
         <div class="res-field-group" v-if="selectedDate">
-          <div class="res-step-label">③ TIME · 選擇時段</div>
+          <div class="res-step-label">④ TIME · 選擇時段</div>
           <div v-if="slots.length === 0 && !loadingSlots" style="font-size:13px; color:var(--fg-2);">此日期無可用時段</div>
           <div v-else class="res-time-grid">
             <div v-for="slot in slots" :key="slot.time"
@@ -292,9 +353,9 @@ function reset() {
           </div>
         </div>
 
-        <!-- ④ Guest info -->
+        <!-- ⑤ Guest info -->
         <div class="res-field-group">
-          <div class="res-step-label">④ GUEST · 訂位資料</div>
+          <div class="res-step-label">⑤ GUEST · 訂位資料</div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
             <div>
               <div class="num" style="font-size:9px; color:var(--fg-2); letter-spacing:0.25em; margin-bottom:6px;">NAME</div>
@@ -315,7 +376,7 @@ function reset() {
         <div v-if="selectedDate && selectedTime" class="res-summary">
           <div>
             <div class="display-it" style="font-size:16px;">
-              {{ selectedDateLabel }} · {{ selectedTime }} · {{ form.partySize }} 位
+              {{ selectedDateLabel }} · {{ selectedTime }} · {{ SEAT_LABEL[seatType] }} · {{ form.partySize }} 位
             </div>
             <div class="num" style="font-size:9px; color:var(--fg-2); letter-spacing:0.2em; margin-top:4px;">暫定 · 送出後確認</div>
           </div>
@@ -369,7 +430,9 @@ function reset() {
                     <div class="display" style="font-size:16px; margin-bottom:4px;">
                       {{ r.reservedAt?.slice(0,16).replace('T',' ') }}
                     </div>
-                    <div style="font-size:12px; color:var(--fg-2);">{{ r.customerName }} · {{ r.partySize }} 位</div>
+                    <div style="font-size:12px; color:var(--fg-2);">
+                      {{ r.customerName }} · {{ SEAT_LABEL[r.seatType] || r.seatType }} · {{ r.partySize }} 位
+                    </div>
                     <div v-if="r.notes" style="font-size:11px; color:var(--fg-3); margin-top:4px;">{{ r.notes }}</div>
                   </div>
                   <div class="num" style="font-size:9px; letter-spacing:0.15em;"

@@ -31,4 +31,14 @@ public interface BarTableMapper extends BaseMapper<BarTable> {
             WHERE tst.session_id = #{sessionId}
             """)
     List<BarTable> selectBySessionId(Integer sessionId);
+
+    // 可訂位桌位（active 且未鎖定），加 FOR UPDATE 序列化並發訂位的「檢查 + 寫入」，
+    // 防止兩筆同時通過容量檢查造成超訂。必須在交易內呼叫。
+    @Select("""
+            SELECT * FROM bar_table
+            WHERE is_active = 1 AND is_locked = 0
+            ORDER BY id
+            FOR UPDATE
+            """)
+    List<BarTable> selectReservableForUpdate();
 }
