@@ -3,6 +3,11 @@
 // 測試帳號由 sql/test-seed.sql 種入，密碼統一 Test1234!
 // 後端 / 前端由 docker-compose 提供（baseURL http://localhost）。
 
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
 export const BASE = 'http://localhost'
 export const PASSWORD = 'Test1234!'
 
@@ -133,4 +138,36 @@ export async function clickVisibly(locator) {
   // 用 locator.click 實際觸發（座標點擊對某些元件事件綁定較不可靠），
   // 游標已在正確位置、漣漪由 mousedown 事件產生。
   await locator.click()
+}
+
+// ── 測試資料清理 ─────────────────────────────────────────
+
+// 從專案根的 .env 讀 DB 密碼（與手動 docker exec 一致），讀不到用預設。
+function dbPassword() {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    const envPath = join(here, '..', '..', '.env')
+    const m = readFileSync(envPath, 'utf8').match(/^DB_PASSWORD=(.*)$/m)
+    if (m && m[1].trim()) return m[1].trim()
+  } catch { /* 讀不到就用預設 */ }
+  return 'pobar_pass'
+}
+
+/**
+ * 刪除指定手機號的所有訂位（測試自我清理，保持 DB 乾淨）。
+ * 訂位無員工刪除 API，故直接透過 docker exec 操作測試 DB。
+ * 僅限測試手機號使用，避免誤刪真實資料。
+ * @param {string} phone
+ */
+export function deleteReservationsByPhone(phone) {
+  const sql = `DELETE FROM reservation WHERE customer_phone='${phone}';`
+  try {
+    execFileSync('docker', [
+      'exec', '-i', 'pobar-mysql',
+      'mysql', '-upobar', `-p${dbPassword()}`, 'pobar', '-e', sql,
+    ], { stdio: ['ignore', 'ignore', 'ignore'] })
+  } catch (e) {
+    // 清理失敗不讓測試整體失敗，只在 console 提示
+    console.warn(`[cleanup] 清理訂位失敗（phone=${phone}）:`, e.message)
+  }
 }
