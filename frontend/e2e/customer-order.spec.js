@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { openTableSession, closeTableSession, forceZhTW, typeSlowly } from './helpers.js'
+import { openTableSession, closeTableSession, forceZhTW, typeSlowly, clickVisibly } from './helpers.js'
 import { installCursor } from './cursor.js'
 
 /**
@@ -40,7 +40,7 @@ test.describe('顧客點餐流程', () => {
     const firstItem = page.locator('.sp-item-row:not(.sp-item-unavailable)').first()
     await expect(firstItem).toBeVisible()
     const itemName = await firstItem.locator('.display').first().innerText()
-    await firstItem.click()
+    await clickVisibly(firstItem)
 
     // modal 開啟
     const modal = page.locator('.sp-modal')
@@ -48,16 +48,16 @@ test.describe('顧客點餐流程', () => {
 
     // 3. 填備註（逐字輸入，錄影看得清楚）+ 增加數量到 2
     await typeSlowly(modal.locator('.sp-textarea'), '少冰、不要吸管')
-    await modal.locator('.sp-qty-btn', { hasText: '+' }).click()
+    await clickVisibly(modal.locator('.sp-qty-btn', { hasText: '+' }))
 
     // 4. 加入購物車（按鈕文字含「加入 · NT$」）
-    await modal.getByRole('button', { name: /加入/ }).click()
+    await clickVisibly(modal.getByRole('button', { name: /加入/ }))
 
     // modal 關閉、購物車 footer 出現
     await expect(page.locator('.sp-cart-footer')).toBeVisible()
 
     // 5. 開購物車 drawer
-    await page.locator('.sp-cart-btn').click()
+    await clickVisibly(page.locator('.sp-cart-btn'))
     const drawer = page.locator('.sp-drawer')
     await expect(drawer).toBeVisible()
     // 購物車內含剛加入的品項與備註
@@ -65,9 +65,9 @@ test.describe('顧客點餐流程', () => {
     await expect(drawer.getByText('少冰、不要吸管')).toBeVisible()
 
     // 6. 送出訂單 → 確認框 → 確定
-    await drawer.getByRole('button', { name: /送出訂單/ }).click()
+    await clickVisibly(drawer.getByRole('button', { name: /送出訂單/ }))
     // Element Plus 確認框（元件預設語系為英文，確認鈕為 OK）
-    await page.getByRole('button', { name: 'OK' }).click()
+    await clickVisibly(page.getByRole('button', { name: 'OK' }))
 
     // 7. 成功提示
     await expect(page.getByText('訂單已送出！')).toBeVisible()

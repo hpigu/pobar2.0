@@ -96,6 +96,41 @@ export async function forceZhTW(page) {
  */
 export async function typeSlowly(locator, text) {
   const delay = Number(process.env.SLOWMO ?? 800) > 0 ? 60 : 0
-  await locator.click()
+  await clickVisibly(locator)
   await locator.pressSequentially(text, { delay })
+}
+
+/**
+ * 可見地點擊：先把游標「移動」到目標中心 → 停頓（讓觀眾看清要點哪）→ 才按下。
+ * 取代 locator.click() 的瞬移直點，讓錄影有「移過去 → 停 → 點」的清楚節奏。
+ * 設 SLOWMO=0 時停頓歸零、退回一般快速點擊（純回歸驗證用）。
+ * @param {import('@playwright/test').Locator} locator
+ */
+export async function clickVisibly(locator) {
+  const slow = Number(process.env.SLOWMO ?? 800) > 0
+  const page = locator.page()
+
+  // 取目標位置；彈出對話框等 overlay 元素可能取不到 box / scroll 失敗，
+  // 這種情況退回一般 click（仍會有點擊漣漪，只是少了移動軌跡）。
+  let box = null
+  if (slow) {
+    try {
+      await locator.scrollIntoViewIfNeeded({ timeout: 3000 })
+      box = await locator.boundingBox()
+    } catch { box = null }
+  }
+  if (!box) {
+    await locator.click()
+    return
+  }
+
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  // 分段移動 → 游標可見地滑向目標
+  await page.mouse.move(cx, cy, { steps: 20 })
+  // 按下前停一下，讓觀眾看清楚游標停在哪個元素上
+  await page.waitForTimeout(600)
+  // 用 locator.click 實際觸發（座標點擊對某些元件事件綁定較不可靠），
+  // 游標已在正確位置、漣漪由 mousedown 事件產生。
+  await locator.click()
 }

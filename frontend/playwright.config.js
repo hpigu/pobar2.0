@@ -19,6 +19,8 @@ export default defineConfig({
   fullyParallel: false,        // 共用同一份 DB，序列執行避免資料互相干擾
   workers: 1,
   retries: 0,
+  // 錄影用的「移到目標→停頓→點擊」節奏（clickVisibly）較慢，放寬單測逾時。
+  timeout: 120_000,
   reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
@@ -26,13 +28,11 @@ export default defineConfig({
     video: 'on',               // ← 核心：每個測試都錄影
     trace: 'on',               // 逐步操作追蹤（含截圖、DOM 快照）
     screenshot: 'only-on-failure',
-    actionTimeout: 15_000,     // slowMo 會拉長單一動作耗時，放寬逾時
+    actionTimeout: 15_000,
     navigationTimeout: 15_000,
-    // 每個操作（點擊、輸入…）間插入停頓，讓錄影看得清楚。
-    // 想加快回歸驗證時，設環境變數 SLOWMO=0 即可關閉。
-    launchOptions: {
-      slowMo: Number(process.env.SLOWMO ?? 800),
-    },
+    // 註：不再用全域 slowMo（會與 clickVisibly 的停頓疊加、節奏難預測）。
+    // 錄影節奏統一由 helpers 的 clickVisibly / typeSlowly 明確控制，
+    // 並以環境變數 SLOWMO 開關（SLOWMO=0 關閉停頓，供純回歸驗證加速）。
   },
 
   projects: [
