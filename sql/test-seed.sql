@@ -10,7 +10,10 @@
 --   new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("Test1234!")
 --
 -- 匯入方式：
---   docker exec -i pobar-mysql mysql -upobar -ppobar_pass pobar < sql/test-seed.sql
+--   docker exec -i pobar-mysql mysql --default-character-set=utf8mb4 \
+--     -upobar -ppobar_pass pobar < sql/test-seed.sql
+--   ⚠️ 務必加 --default-character-set=utf8mb4，否則中文（如「測試餐點」）
+--      會存成亂碼。
 -- ─────────────────────────────────────────────────────────────
 
 -- ── 員工帳號 ─────────────────────────────────────────────
@@ -30,14 +33,23 @@ ON DUPLICATE KEY UPDATE
 
 -- ── 桌位（一般桌 ×4 + 吧台 ×2）─────────────────────────────
 -- 顧客點餐流程需先由員工開桌產生 QR token，故測試前需有可用桌位。
--- bar_table.name 無 UNIQUE 約束，故先刪同名測試桌位再插入以確保可重複執行。
--- 注意：只刪 A1~A4/B1~B2 這組測試桌名，不影響其他既有桌位。
-DELETE FROM `bar_table` WHERE `name` IN ('A1','A2','A3','A4','B1','B2');
+-- 冪等策略：只在該桌名尚不存在時插入（不刪除，因桌位可能被 table_session_table
+-- 外鍵引用，DELETE 會失敗）。桌位為靜態基礎資料，建一次即可。
 INSERT INTO `bar_table` (`name`, `type`, `capacity`, `pos_x`, `pos_y`, `is_locked`, `is_active`)
-VALUES
-  ('A1', 'REGULAR',     2,  0,  0, 0, 1),
-  ('A2', 'REGULAR',     2, 80,  0, 0, 1),
-  ('A3', 'REGULAR',     4,  0, 80, 0, 1),
-  ('A4', 'REGULAR',     4, 80, 80, 0, 1),
-  ('B1', 'BAR_COUNTER', 1,  0,160, 0, 1),
-  ('B2', 'BAR_COUNTER', 1, 40,160, 0, 1);
+SELECT * FROM (
+  SELECT 'A1' n, 'REGULAR' t, 2 c, 0 x, 0 y, 0 l, 1 a UNION ALL
+  SELECT 'A2', 'REGULAR',     2, 80,  0, 0, 1 UNION ALL
+  SELECT 'A3', 'REGULAR',     4,  0, 80, 0, 1 UNION ALL
+  SELECT 'A4', 'REGULAR',     4, 80, 80, 0, 1 UNION ALL
+  SELECT 'B1', 'BAR_COUNTER', 1,  0,160, 0, 1 UNION ALL
+  SELECT 'B2', 'BAR_COUNTER', 1, 40,160, 0, 1
+) seed
+WHERE NOT EXISTS (SELECT 1 FROM `bar_table` bt WHERE bt.`name` = seed.n);
+
+-- ── FOOD 測試品項 ──────────────────────────────────────────
+-- 菜單原本全為 DRINK（調酒），廚房出餐看板（?type=FOOD）沒有品項可測。
+-- 種一個 FOOD 品項供廚房測試（吧台看板用既有 DRINK 品項即可）。
+-- 以 name_zh 冪等：先刪同名再插入。
+DELETE FROM `product` WHERE `name_zh` = '測試餐點';
+INSERT INTO `product` (`category_id`, `name_zh`, `name_en`, `price`, `type`, `is_active`, `is_available`, `created_by`)
+VALUES ((SELECT id FROM category LIMIT 1), '測試餐點', 'Test Dish', 200, 'FOOD', 1, 1, 'test-seed');
