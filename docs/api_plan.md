@@ -1,13 +1,18 @@
-# Pobar 酒吧系統 — API 規劃
+# Pobar 酒吧系統 — API 一覽
+
+> 本文對照實作（`src/main/java/com/pobar/controller/`）整理，非僅規劃。
+> 角色標記 `WAITER+` = WAITER / MANAGER / ADMIN；`Public（帶 token）` = 免登入但需帶 `X-Session-Token`（掃碼取得的 QR token）。
+> 所有回應統一為 `{ code, message, data }`，錯誤碼見 [error-codes.md](error-codes.md)。
 
 ## 認證
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| POST | `/api/auth/login` | 員工登入，回傳 JWT | Public |
-| POST | `/api/auth/logout` | 登出（前端清除 token） | 已登入 |
+| POST | `/api/auth/login` | 員工登入，回傳 access + refresh token | Public |
+| POST | `/api/auth/refresh` | 以 refresh token 換發新 token（輪替） | Public |
+| POST | `/api/auth/logout` | 登出（access token 加入黑名單） | 已登入 |
+| POST | `/api/auth/change-password` | 修改密碼（首次登入強制改密走同一支） | 已登入 |
 | GET | `/api/auth/me` | 取得目前登入者資訊 | 已登入 |
-| PUT | `/api/auth/password` | 修改密碼 | 已登入 |
 
 ---
 
@@ -15,14 +20,24 @@
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| GET | `/api/tables` | 取得所有桌位（含狀態） | WAITER+ |
-| POST | `/api/tables` | 新增桌位 | ADMIN |
-| PUT | `/api/tables/{id}` | 編輯桌位（名稱、容量、座標、鎖定） | ADMIN |
-| DELETE | `/api/tables/{id}` | 刪除桌位 | ADMIN |
-| POST | `/api/tables/sessions` | 開桌（單桌或多桌併桌），回傳 session + QR token | WAITER+ |
-| DELETE | `/api/tables/sessions/{sessionId}` | 關桌（結帳後） | WAITER+ |
-| POST | `/api/tables/sessions/{sessionId}/merge` | 併桌（追加更多 table 到 session） | WAITER+ |
-| GET | `/api/tables/sessions/{sessionId}` | 查詢 session 狀態（客人掃 QR 後呼叫） | Public |
+| GET | `/api/tables` | 取得所有桌位（含狀態與目前 session） | WAITER+ |
+| POST | `/api/tables` | 新增桌位 | MANAGER ADMIN |
+| PUT | `/api/tables/{id}` | 編輯桌位（名稱、容量、座標、鎖定） | MANAGER ADMIN |
+| DELETE | `/api/tables/{id}` | 刪除桌位 | MANAGER ADMIN |
+| POST | `/api/tables/sessions` | 開桌（單桌或多桌），回傳 session + QR token | WAITER+ |
+| DELETE | `/api/tables/sessions/{sessionId}` | 關桌 | WAITER+ |
+| POST | `/api/tables/sessions/{sessionId}/merge` | 併桌（追加 table 到 session，前端尚無入口） | WAITER+ |
+| GET | `/api/tables/sessions/{token}` | 以 QR token 查 session（客人掃碼後呼叫） | Public |
+
+---
+
+## 購物車（客人端，in-memory）
+
+| Method | 路徑 | 說明 | 角色 |
+|---|---|---|---|
+| GET | `/api/cart` | 取得本桌購物車 | Public（帶 token） |
+| POST | `/api/cart/items` | 加入品項（含備註） | Public（帶 token） |
+| DELETE | `/api/cart/items/{itemKey}` | 移除品項 | Public（帶 token） |
 
 ---
 
@@ -30,9 +45,11 @@
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| POST | `/api/orders` | 送出訂單（一次送出多個品項） | Public（帶 token） |
-| GET | `/api/orders/session/{sessionId}` | 查詢本桌所有訂單紀錄 | Public（帶 token） |
-| PUT | `/api/orders/items/{itemId}/status` | 更新品項狀態（IN_PROGRESS / READY） | KITCHEN BARTENDER |
+| POST | `/api/orders` | 送出訂單（一次多個品項） | Public（帶 token） |
+| GET | `/api/orders/session` | 查本桌訂單（依 token） | Public（帶 token） |
+| GET | `/api/orders/session/{sessionId}` | 查指定 session 訂單 | WAITER+ |
+| GET | `/api/orders/display?type=FOOD\|DRINK` | 出餐看板清單 | KITCHEN BARTENDER MANAGER ADMIN |
+| PUT / PATCH | `/api/orders/items/{itemId}/status` | 更新品項狀態（IN_PROGRESS / READY） | KITCHEN BARTENDER MANAGER ADMIN |
 | DELETE | `/api/orders/items/{itemId}` | 取消品項 | WAITER+ |
 | PUT | `/api/orders/items/{itemId}` | 修改品項備註、數量 | WAITER+ |
 
@@ -42,27 +59,24 @@
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| GET | `/api/menu` | 取得所有上架品項（含屬性），支援篩選參數 | Public |
+| GET | `/api/menu` | 取得所有上架品項，支援篩選參數 | Public |
 | GET | `/api/menu/{id}` | 取得單一品項詳細資訊 | Public |
-| POST | `/api/menu` | 新增品項 | MANAGER ADMIN BARTENDER |
-| PUT | `/api/menu/{id}` | 編輯品項 | MANAGER ADMIN BARTENDER |
+| POST | `/api/menu` | 新增品項 | MANAGER ADMIN |
+| PUT | `/api/menu/{id}` | 編輯品項 | MANAGER ADMIN |
 | DELETE | `/api/menu/{id}` | 下架品項（軟刪除） | MANAGER ADMIN |
-| PUT | `/api/menu/{id}/availability` | 切換臨時售完 | MANAGER ADMIN BARTENDER |
-| POST | `/api/menu/{id}/image` | 上傳品項照片 | MANAGER ADMIN BARTENDER |
+| PUT | `/api/menu/{id}/availability` | 切換臨時售完 | MANAGER ADMIN |
+| POST | `/api/menu/{id}/image` | 上傳品項照片（含內容與尺寸驗證） | MANAGER ADMIN |
 | GET | `/api/categories` | 取得分類清單 | Public |
 | POST | `/api/categories` | 新增分類 | MANAGER ADMIN |
 | PUT | `/api/categories/{id}` | 編輯分類 | MANAGER ADMIN |
 | DELETE | `/api/categories/{id}` | 刪除分類 | MANAGER ADMIN |
 
----
-
-## 酒單篩選參數（GET /api/menu）
+### 酒單篩選參數（GET /api/menu）
 
 ```
 GET /api/menu
   ?type=DRINK                     只看酒品
   &categoryId=1                   特定分類
-  &attributeOptions=1,3,7         多選屬性選項 id（AND 條件）
   &available=true                 只看有貨的
 ```
 
@@ -72,23 +86,12 @@ GET /api/menu
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| GET | `/api/menu/{productId}/recipe` | 取得酒譜（調酒師點餐時用） | BARTENDER+ |
-| POST | `/api/menu/{productId}/recipe` | 新增酒譜 | MANAGER ADMIN BARTENDER |
-| PUT | `/api/menu/{productId}/recipe` | 更新酒譜 | MANAGER ADMIN BARTENDER |
+| GET | `/api/menu/{productId}/recipe` | 取得酒譜 | MANAGER ADMIN |
+| GET | `/api/menu/{productId}/recipe-detail` | 取得酒譜含食材明細 | MANAGER ADMIN |
+| POST | `/api/menu/{productId}/recipe` | 新增 / 更新酒譜 | MANAGER ADMIN |
 
----
-
-## 酒單屬性維度
-
-| Method | 路徑 | 說明 | 角色 |
-|---|---|---|---|
-| GET | `/api/attributes` | 取得所有維度類型 + 選項 | Public |
-| POST | `/api/attributes/types` | 新增維度類型 | ADMIN |
-| PUT | `/api/attributes/types/{id}` | 編輯維度類型 | ADMIN |
-| DELETE | `/api/attributes/types/{id}` | 刪除維度類型 | ADMIN |
-| POST | `/api/attributes/types/{typeId}/options` | 新增選項 | ADMIN |
-| PUT | `/api/attributes/options/{id}` | 編輯選項 | ADMIN |
-| DELETE | `/api/attributes/options/{id}` | 刪除選項 | ADMIN |
+> 飲品屬性維度（`drink_attribute_type` / `option` 與 `/api/attributes/*`）已於 `6e9103f` 整組移除。
+> 菜單與酒譜的寫入權限已於 `458cac3` 由 BARTENDER 收斂至 MANAGER / ADMIN。
 
 ---
 
@@ -99,8 +102,8 @@ GET /api/menu
 | GET | `/api/ingredients` | 取得所有食材 | MANAGER ADMIN |
 | POST | `/api/ingredients` | 新增食材 | MANAGER ADMIN |
 | PUT | `/api/ingredients/{id}` | 編輯食材 | MANAGER ADMIN |
+| PATCH | `/api/ingredients/{id}/availability` | 標記缺貨 / 補貨（連動下架品項） | MANAGER ADMIN |
 | DELETE | `/api/ingredients/{id}` | 刪除食材 | MANAGER ADMIN |
-| PUT | `/api/ingredients/{id}/availability` | 標記缺貨 / 補貨（連動下架品項） | MANAGER ADMIN |
 
 ---
 
@@ -128,59 +131,83 @@ GET /api/menu
 
 | Method | 路徑 | 說明 | 角色 |
 |---|---|---|---|
-| GET | `/api/payments/session/{sessionId}/preview` | 預覽帳單（小計、服務費、總計） | WAITER+ |
-| POST | `/api/payments` | 完成結帳 | WAITER+ |
-| POST | `/api/invoices/{paymentId}` | 開立電子發票（呼叫綠界） | WAITER+ |
-| GET | `/api/invoices/{paymentId}` | 查詢發票狀態 | WAITER+ |
+| GET | `/api/sessions/{sessionId}/payment/preview` | 預覽帳單（小計、服務費、合計、品項明細） | WAITER+ |
+| POST | `/api/sessions/{sessionId}/payment` | 完成結帳（付款方式、均攤人數、發票載具） | WAITER+ |
+
+> 電子發票隨結帳一併處理（`CheckoutRequest.carrierType` 有值才開票），尚無獨立的發票查詢端點。
+> `EcpayInvoiceService` 仍是 stub：**未設定** `ecpay.*` 時回傳模擬號碼 `AB` + 8 碼付款 id；
+> 一旦設定了金鑰卻沒實作 API 呼叫，`issue()` 會丟 `UnsupportedOperationException` 而讓結帳失敗——
+> 串接完成前請維持金鑰為空。
 
 ---
 
-## 報表
+## 報表（僅 ADMIN）
 
-| Method | 路徑 | 說明 | 角色 |
-|---|---|---|---|
-| GET | `/api/reports/daily?date=` | 指定日期營收總計 | MANAGER ADMIN |
-| GET | `/api/reports/revenue?from=&to=` | 區間每日營收折線圖資料 | MANAGER ADMIN |
-| GET | `/api/reports/sales-ranking?from=&to=` | 品項銷售排行 | MANAGER ADMIN |
-| GET | `/api/reports/monthly?year=` | 全年每月比較 | MANAGER ADMIN |
-
----
-
-## 員工帳號
-
-| Method | 路徑 | 說明 | 角色 |
-|---|---|---|---|
-| GET | `/api/users` | 取得員工清單 | ADMIN |
-| POST | `/api/users` | 新增員工帳號 | ADMIN |
-| PUT | `/api/users/{id}` | 編輯帳號（角色、啟用狀態） | ADMIN |
-| POST | `/api/users/{id}/reset-password` | 重設密碼 | ADMIN |
+| Method | 路徑 | 說明 |
+|---|---|---|
+| GET | `/api/reports/daily?date=` | 指定日期營收、桌數、人數與逐小時分佈 |
+| GET | `/api/reports/ranking?from=&to=&limit=` | 品項銷售排行（預設近 30 天，limit 上限 50） |
+| GET | `/api/reports/monthly?year=&month=` | 當月每日收入 vs 去年同期 |
 
 ---
 
-## 系統設定
+## 員工帳號（僅 ADMIN）
 
-| Method | 路徑 | 說明 | 角色 |
-|---|---|---|---|
-| GET | `/api/settings` | 取得所有設定值 | ADMIN |
-| PUT | `/api/settings` | 批次更新設定值 | ADMIN |
+| Method | 路徑 | 說明 |
+|---|---|---|
+| GET | `/api/admin/users` | 取得員工清單 |
+| POST | `/api/admin/users` | 新增員工帳號 |
+| PUT | `/api/admin/users/{id}` | 編輯帳號（角色、聯絡資訊、強制改密） |
+| DELETE | `/api/admin/users/{id}` | 停用帳號 |
+
+---
+
+## 系統設定（僅 ADMIN）
+
+| Method | 路徑 | 說明 |
+|---|---|---|
+| GET | `/api/settings` | 取得所有設定值 |
+| GET | `/api/settings/{key}` | 取得單一設定值 |
+| PUT | `/api/settings` | 批次更新設定值 |
+| PUT | `/api/settings/{key}` | 更新單一設定值 |
+
+---
+
+## 資料庫備份（僅 ADMIN）
+
+| Method | 路徑 | 說明 |
+|---|---|---|
+| POST | `/api/backups` | 立即執行一次 mysqldump，回傳本次紀錄 |
+| GET | `/api/backups` | 最近 20 筆備份紀錄 |
+
+> 排程每日 03:00 自動執行，紀錄寫入 `backup_log`。
+
+---
+
+## 健康檢查
+
+| 路徑 | 說明 | 角色 |
+|---|---|---|
+| `/actuator/health`、`/actuator/info` | 存活與版本資訊 | Public |
+| `/actuator/**` 其餘 | 其他監控端點 | 已登入 |
 
 ---
 
 ## WebSocket 端點
 
 ```
-連線端點：ws://host/ws（STOMP）
+連線端點：/ws（SockJS + STOMP），應用前綴 /app
 
-訂閱頻道：
-  /topic/table/{sessionId}/cart    客人端購物車同步
+訂閱頻道（需 JWT）：
   /topic/kitchen                   廚房新訂單推播
   /topic/bar                       吧台新訂單推播
   /topic/staff/pickup              服務生取餐通知
   /topic/tables                    桌位狀態更新
-  /topic/menu/availability         品項上下架即時更新
 
-發送端點（客人端送出購物車）：
-  /app/cart/{sessionId}/add        加入品項
-  /app/cart/{sessionId}/remove     移除品項
-  /app/order/{sessionId}/submit    送出訂單
+訂閱頻道（以 QR session token 驗證）：
+  /topic/table/{token}/cart        客人端購物車同步
+  /topic/table/{token}/orders      客人端訂單狀態同步
 ```
+
+> 頻道授權在 `WebSocketConfig` 的 ChannelInterceptor 完成：`/topic/staff/**`、`/topic/kitchen`、
+> `/topic/bar`、`/topic/tables` 必須帶有效 JWT；`/topic/table/{token}/*` 則比對該 token 是否為有效的 OPEN session。
