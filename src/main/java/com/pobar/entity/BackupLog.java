@@ -15,5 +15,6 @@ public class BackupLog {
     private Long fileSizeBytes;
     private String status;        // SUCCESS, FAILED
     private String errorMessage;
-    private LocalDateTime createdAt;
+    // 對應 DB 欄位 backup_at（勿改名為 createdAt，schema 沒有那一欄）
+    private LocalDateTime backupAt;
 }

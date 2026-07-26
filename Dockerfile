@@ -11,6 +11,13 @@ RUN mvn package -DskipTests -q
 # 註：不使用 -jre-alpine，該變體在 arm64（Apple Silicon）無對應 manifest
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+
+# BackupScheduler 的每日備份要呼叫 mysqldump，JRE 映像預設沒有，需另外安裝。
+# 用 MySQL 官方 client（非 mariadb-client）以確保與 MySQL 8.0 server 相容。
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends mysql-client-core \
+ && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/target/*.jar app.jar
 
 # 建立必要目錄
